@@ -436,10 +436,22 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
 	    checkNumberOfArguments<3>(e);
 
 	    auto arg0 = getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, isPositive);
-	    auto arg1 = getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
-	    auto arg2 = getBDDFromExpr(e.arg(2), boundVars, onlyExistentials, isPositive);
+		BDDInterval result;
 
-	    auto result = arg0.Ite(arg1, arg2);
+		if (arg0.lower.IsOne() ) {
+			std::cout << "bool is one" << std::endl;
+			result = getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
+
+		} else if (arg0.upper.IsZero()) {
+			std::cout << "bool is zero" << std::endl;
+			result = getBDDFromExpr(e.arg(2), boundVars, onlyExistentials, isPositive);
+		}
+		else {
+			auto arg1 = getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
+	    	auto arg2 = getBDDFromExpr(e.arg(2), boundVars, onlyExistentials, isPositive);
+			result = arg0.Ite(arg1, arg2);
+		}
+	    
 
 	    return insertIntoCaches(e, result, boundVars, isPositive);
 	}
@@ -861,12 +873,23 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 		return insertIntoCaches(e, {unknown, APPROXIMATED, APPROXIMATED}, boundVars);
 	    }
 
-	    auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
-	    auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
+		Bvec result(bddManager);
 
-	    auto maybeArg0 = MaybeBDD(arg0.upper);
-	    auto result = Bvec::bvec_ite(MaybeBDD{maybeArg0},
-					 arg1, arg2);
+		if (arg0.lower.IsOne()) {
+			std::cout << "bvec is one" << std::endl;
+			result = getBvecFromExpr(e.arg(1), boundVars).value;
+		} else if (arg0.upper.IsZero()) {
+			std::cout << "bvec is zero" << std::endl;
+			result = getBvecFromExpr(e.arg(2), boundVars).value;
+		} else {
+			auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
+			auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
+
+			auto maybeArg0 = MaybeBDD(arg0.upper);
+			result = Bvec::bvec_ite(MaybeBDD{maybeArg0},
+						arg1, arg2);
+		}
+
 	    return insertIntoCaches(e, {result, APPROXIMATED, APPROXIMATED}, boundVars);
 	}
 	else
