@@ -15,6 +15,9 @@
 #include "Approximated.h"
 #include "Config.h"
 #include "BDDInterval.h"
+#include "ExpensiveOp.h"
+#include <iostream>
+
 
 typedef std::pair<std::string, int> var;
 
@@ -24,6 +27,7 @@ enum Approximation { UNDERAPPROXIMATION, OVERAPPROXIMATION, NO_APPROXIMATION };
 
 typedef std::pair<std::string, BoundType> boundVar;
 
+
 using namespace cudd;
 
 class ExprToBDDTransformer
@@ -31,6 +35,7 @@ class ExprToBDDTransformer
   private:
     Cudd bddManager;
 
+    
     std::map<std::string, Bvec> vars;
     std::map<std::string, BDD> varSets;
     std::map<std::string, std::vector<int>> varIndices;
@@ -68,38 +73,51 @@ class ExprToBDDTransformer
     Bvec getNumeralBvec(const z3::expr&);
     bool isMinusOne(const Bvec&);
 
+    
+
     template < typename Top,  typename TisDefinite, typename TdefaultResult >
     BDDInterval getConnectiveBdd(const std::vector<z3::expr>& arguments, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive,
                                  Top&& op, TisDefinite&& isDefinite, TdefaultResult&& defaultResult)
     {
         std::vector<BDDInterval> results;
+        ExpensiveOp op_counter;
+        std::vector<std::pair<z3::expr, unsigned int>> exprExpensiveOpsVec;
 
         for (unsigned int i = 0; i < arguments.size(); i++)
         {
             if (isInterrupted()) { return defaultResult; }
-            auto argBdd = getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive);
 
-            if (isDefinite(argBdd)) { return argBdd; }
-            else { results.push_back(argBdd); }
+
+            //auto argBdd = getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive);
+            
+            auto expOpCount = op_counter.getExpensiveOpNum(arguments[i]);
+            exprExpensiveOpsVec.push_back(std::make_pair(arguments[i], expOpCount));
+            
+            
+            //if (isDefinite(argBdd)) { return argBdd; }
+            //else { results.push_back(argBdd); }
         }
+        
 
-        if (results.size() == 0) { return defaultResult; }
+        if (exprExpensiveOpsVec.size() == 0) { return defaultResult; }
         else
         {
-            std::sort(results.begin(), results.end(),
-                      [&](const auto a, const auto b) -> bool
+            std::sort(exprExpensiveOpsVec.begin(), exprExpensiveOpsVec.end(),
+                      [&](const auto &left, const auto &right) -> bool
                           {
-                              return bddManager.nodeCount(std::vector<BDD>{a.upper}) < bddManager.nodeCount(std::vector<BDD>{b.upper});
+                              return left.second < right.second;
                           });
 
-            auto toReturn = results.at(0);
+            auto toReturn = defaultResult;
+           
 
-            for (unsigned int i = 1; i < results.size(); i++)
+            for (unsigned int i = 1; i < exprExpensiveOpsVec.size(); i++)
             {
                 if (isInterrupted()) { return defaultResult; }
                 if (isDefinite(toReturn)) { return toReturn; }
-
-                toReturn = op(toReturn, results.at(i));
+                auto argBdd = getBDDFromExpr(exprExpensiveOpsVec[i].first, boundVars, onlyExistentials, isPositive);
+                
+                toReturn = op(toReturn, argBdd);
             }
 
             return toReturn;

@@ -73,6 +73,7 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
     {
         Solver::resultComputed = false;
     }
+
     Logger::Log("Solver", "Simplifying formula.", 1);
     m_z3context.lock();
     ExprSimplifier simplifier(expr.ctx(), config.propagateUnconstrained, config.goalUnconstrained);

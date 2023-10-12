@@ -1,6 +1,6 @@
 #include "ExprToBDDTransformer.h"
 #include <cmath>
-#include <iostream>
+
 #include <sstream>
 #include <list>
 #include <algorithm>
@@ -199,6 +199,8 @@ bool ExprToBDDTransformer::correctBoundVars(const std::vector<boundVar> &boundVa
 
     return true;
 }
+
+
 
 BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive)
 {
