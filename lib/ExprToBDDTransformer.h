@@ -35,7 +35,7 @@ class ExprToBDDTransformer
   private:
     Cudd bddManager;
 
-    
+
     std::map<std::string, Bvec> vars;
     std::map<std::string, BDD> varSets;
     std::map<std::string, std::vector<int>> varIndices;
@@ -73,7 +73,7 @@ class ExprToBDDTransformer
     Bvec getNumeralBvec(const z3::expr&);
     bool isMinusOne(const Bvec&);
 
-    
+
 
     template < typename Top,  typename TisDefinite, typename TdefaultResult >
     BDDInterval getConnectiveBdd(const std::vector<z3::expr>& arguments, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive,
@@ -89,15 +89,15 @@ class ExprToBDDTransformer
 
 
             //auto argBdd = getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive);
-            
+
             auto expOpCount = op_counter.getExpensiveOpNum(arguments[i]);
             exprExpensiveOpsVec.push_back(std::make_pair(arguments[i], expOpCount));
-            
-            
+
+
             //if (isDefinite(argBdd)) { return argBdd; }
             //else { results.push_back(argBdd); }
         }
-        
+
 
         if (exprExpensiveOpsVec.size() == 0) { return defaultResult; }
         else
@@ -109,14 +109,14 @@ class ExprToBDDTransformer
                           });
 
             auto toReturn = defaultResult;
-           
 
-            for (unsigned int i = 1; i < exprExpensiveOpsVec.size(); i++)
+
+            for (unsigned int i = 0; i < exprExpensiveOpsVec.size(); i++)
             {
                 if (isInterrupted()) { return defaultResult; }
                 if (isDefinite(toReturn)) { return toReturn; }
                 auto argBdd = getBDDFromExpr(exprExpensiveOpsVec[i].first, boundVars, onlyExistentials, isPositive);
-                
+
                 toReturn = op(toReturn, argBdd);
             }
 
