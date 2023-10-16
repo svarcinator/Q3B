@@ -25,4 +25,6 @@ struct Config
 
     bool produceModels = false;
     bool validatingSolver = false;
+
+    bool lazyEvaluation = false;
 };

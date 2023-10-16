@@ -20,6 +20,7 @@ std::condition_variable Solver::doneCV;
 
 Result Solver::getResult(z3::expr expr, Approximation approximation, int effectiveBitWidth)
 {
+    
     if (expr.is_const())
     {
 	if (expr.is_app() && expr.decl().decl_kind() == Z3_OP_TRUE)

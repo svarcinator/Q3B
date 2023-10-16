@@ -164,6 +164,8 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
 
 
 
+
+
 BDDInterval ExprToBDDTransformer::getConjunctionBdd(const vector<expr> &arguments, const vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive)
 {
     return getConnectiveBdd(arguments, boundVars, onlyExistentials, isPositive,
@@ -198,6 +200,22 @@ bool ExprToBDDTransformer::correctBoundVars(const std::vector<boundVar> &boundVa
     }
 
     return true;
+}
+
+
+uint ExprToBDDTransformer::posToEvaluate(const z3::expr& e1, const z3::expr& e2)
+{
+    ExpensiveOp opCounter;
+    auto n1 = opCounter.getExpensiveOpNum(e1);
+    auto n2 = opCounter.getExpensiveOpNum(e2);
+    return (n1 <= n2 )? 1 : 0;
+}
+
+BDDInterval ExprToBDDTransformer::getImplSubBDD(const uint pos, const z3::expr& e, const vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive)
+{
+
+    return (pos == 0) ? !getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, !isPositive)
+                        : getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
 }
 
 
@@ -322,9 +340,22 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
 	else if (decl_kind == Z3_OP_IMPLIES)
 	{
 	    checkNumberOfArguments<2>(e);
+        BDDInterval result;
 
-	    auto result = !getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, !isPositive) +
-		getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
+        if (config.lazyEvaluation)
+        {
+            auto posToEval = posToEvaluate(e.arg(0), e.arg(1));
+            result = getImplSubBDD(posToEval, e.arg(posToEval), boundVars, onlyExistentials, isPositive);
+            if (!result.lower.IsOne())
+            {
+                result = result + getImplSubBDD(1 - posToEval, e.arg(1 - posToEval), boundVars, onlyExistentials, isPositive);
+            }
+        }
+        else
+        {
+            result = !getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, !isPositive) +
+    		getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
+        }
 	    return insertIntoCaches(e, result, boundVars, isPositive);
 	}
 	else if (decl_kind == Z3_OP_ULEQ)
@@ -439,21 +470,24 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
 
 	    auto arg0 = getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, isPositive);
 		BDDInterval result;
+        if (config.lazyEvaluation && arg0.lower.IsOne())
+        {
 
-		if (arg0.lower.IsOne() ) {
-			std::cout << "bool is one" << std::endl;
 			result = getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
+        }
 
-		} else if (arg0.upper.IsZero()) {
-			std::cout << "bool is zero" << std::endl;
+        else if ( config.lazyEvaluation && arg0.upper.IsZero())
+        {
+
 			result = getBDDFromExpr(e.arg(2), boundVars, onlyExistentials, isPositive);
 		}
-		else {
+		else
+        {
 			auto arg1 = getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
 	    	auto arg2 = getBDDFromExpr(e.arg(2), boundVars, onlyExistentials, isPositive);
 			result = arg0.Ite(arg1, arg2);
 		}
-	    
+
 
 	    return insertIntoCaches(e, result, boundVars, isPositive);
 	}
@@ -877,11 +911,14 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 
 		Bvec result(bddManager);
 
-		if (arg0.lower.IsOne()) {
-			std::cout << "bvec is one" << std::endl;
+		if (config.lazyEvaluation && arg0.lower.IsOne())
+        {
+			//std::cout << "bvec is one" << std::endl;
 			result = getBvecFromExpr(e.arg(1), boundVars).value;
-		} else if (arg0.upper.IsZero()) {
-			std::cout << "bvec is zero" << std::endl;
+		}
+        else if (config.lazyEvaluation  && arg0.upper.IsZero())
+        {
+			//std::cout << "bvec is zero" << std::endl;
 			result = getBvecFromExpr(e.arg(2), boundVars).value;
 		} else {
 			auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;

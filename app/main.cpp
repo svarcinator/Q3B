@@ -38,6 +38,7 @@ void print_usage()
     std::cout << "  --uc:goal                   take goals of unconstrained variables into account [1]" << std::endl;
     std::cout << "  --bdd:reorder               BDD reorder type (none|win2|win2ite|win3|win3ite|sift|siftite) [sift]" << std::endl;
     std::cout << "  --simpl:flip-universal      negate universal formulas [0]" << std::endl;
+    std::cout << "  --lazy-evaluation           evaluate expressions in lazy way [0]" << std::endl;
     std::cout << "  --verbosity                 set level of debugging outputs [0]" << std::endl;
 }
 
@@ -55,6 +56,7 @@ int main(int argc, char* argv[])
 	{"bdd:reorder", required_argument, 0, 'r' },
 	{"simpl:flip-universal", required_argument, 0, 'f' },
 	{"verbosity", required_argument, 0, 'v' },
+    {"lazy-evaluation", required_argument, 0, 'l' },
         {"version", no_argument, 0, 'V' },
         {"help", no_argument, 0, 'h' },
 	{0,           0,                 0,  0   }
@@ -65,7 +67,7 @@ int main(int argc, char* argv[])
 
     int opt = 0;
     int long_index = 0;
-    while ((opt = getopt_long(argc, argv,"a:m:b:p:g:r:i:c:C:f:v:hV", long_options, &long_index )) != -1) {
+    while ((opt = getopt_long(argc, argv,"a:m:b:p:g:r:i:l:c:C:f:v:hV", long_options, &long_index )) != -1) {
 	switch (opt) {
 	case 'a':
         {
@@ -144,6 +146,13 @@ int main(int argc, char* argv[])
 	{
             print_usage();
             return 0;
+	}
+    case 'l':
+	{
+
+            config.lazyEvaluation = atoi(optarg);
+            std::cout << "lazy eval is on"  << config.lazyEvaluation << std::endl;
+            break;
 	}
 
 	default:
