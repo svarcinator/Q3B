@@ -79,9 +79,11 @@ expr ExprSimplifier::Simplify(expr expression)
 
     if (DEBUG)
     {
-	std::cout << std::endl << std::endl << "nnf:" << std::endl;
-	std::cout << expression << std::endl;
+    std::cout << std::endl << std::endl << "nnf:" << std::endl;
+    std::cout << expression << std::endl;
     }
+
+    expression = ReorderAndOrArguments(expression);
 
     context->check_error();
     clearCaches();
@@ -1140,4 +1142,33 @@ expr ExprSimplifier::ReduceDivRem(const expr &e)
     return e;
 }
 
+expr ExprSimplifier::ReorderAndOrArguments( const expr &e) 
+{
+    if (e.is_var() | e.is_const()) 
+    {
+        return e;
+    } 
+    else if (e.is_quantifier())
+    {
+        auto b = e.body();
+        return ReorderAndOrArguments(b);
+    } 
+    else if (e.is_app()) 
+    {
+        func_decl f = e.decl();
+	    auto decl_kind = f.decl_kind();
 
+        std::cout << "Expression: " << e.to_string() <<  " kind: " << e.decl().kind() << std::endl;
+        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR ) 
+        {
+            std::cout << "shuffle args" << std::endl;
+        }
+       
+    
+    }
+    else 
+    {
+        std::cout << "else" << std::endl;
+    }
+    return e;
+}
