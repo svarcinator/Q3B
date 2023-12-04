@@ -98,7 +98,7 @@ void printModel(const Model& model)
     std::cout << "(model " << std::endl;
     for (const auto& [var, val] : model)
     {
-	std::visit([&](auto&& arg) { printModelValue(var, arg); }, val);
+	//std::visit([&](auto&& arg) { printModelValue(var, arg); }, val);
     }
     std::cout << ")" << std::endl;
 }
