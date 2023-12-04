@@ -19,6 +19,7 @@
 #include <iostream>
 #include <algorithm> 
 
+#include "Model.h"
 
 typedef std::pair<std::string, int> var;
 
@@ -40,6 +41,7 @@ class ExprToBDDTransformer
     std::map<std::string, Bvec> vars;
     std::map<std::string, BDD> varSets;
     std::map<std::string, std::vector<int>> varIndices;
+    std::map<std::string, z3::sort> varSorts;
 
     std::set<var> constSet;
     std::set<var> boundVarSet;
@@ -232,7 +234,7 @@ class ExprToBDDTransformer
     }
 
     void PrintModel(const std::map<std::string, std::vector<bool>>&);
-    std::map<std::string, std::vector<bool>> GetModel(BDD);
+    Model GetModel(BDD);
 
     void PrintNecessaryValues(BDD);
     void PrintNecessaryVarValues(BDD, const std::string&);

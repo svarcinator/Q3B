@@ -5,28 +5,34 @@
 #include <vector>
 #include <set>
 
-enum Polarity { POSITIVE, NEGATIVE, BOTH_POLARITIES };
+#include "SimplificationPass.h"
+#include "Model.h"
 
 class ExprSimplifier
 {
 public:
-    ExprSimplifier(z3::context &ctx) : propagateUnconstrained(false), goalUnconstrained(false)
+    ExprSimplifier(z3::context &ctx) :
+	propagateUnconstrained(false),
+	goalUnconstrained(false)
     {
       this->context = &ctx;
     }
 
-    ExprSimplifier(z3::context &ctx, bool propagateUnconstrained) : propagateUnconstrained(propagateUnconstrained), goalUnconstrained(false)
+    ExprSimplifier(z3::context &ctx, bool propagateUnconstrained) :
+	propagateUnconstrained(propagateUnconstrained),
+	goalUnconstrained(false)
     {
       this->context = &ctx;
     }
 
-    ExprSimplifier(z3::context &ctx, bool propagateUnconstrained, bool goalUnconstrained) : propagateUnconstrained(propagateUnconstrained), goalUnconstrained(goalUnconstrained)
+    ExprSimplifier(z3::context &ctx, bool propagateUnconstrained, bool goalUnconstrained) :
+	propagateUnconstrained(propagateUnconstrained),
+	goalUnconstrained(goalUnconstrained)
     {
       this->context = &ctx;
     }
 
     z3::expr Simplify (z3::expr);
-    z3::expr ApplyConstantEqualities(const z3::expr&);
     z3::expr PushQuantifierIrrelevantSubformulas(const z3::expr&);
     z3::expr RefinedPushQuantifierIrrelevantSubformulas(const z3::expr&);
     z3::expr negate(const z3::expr&);
@@ -43,6 +49,8 @@ public:
     {
         produceModels = value;
     }
+
+    void ReconstructModel(Model &model);
 
 private:
     enum BoundType { EXISTENTIAL, UNIVERSAL };
@@ -69,7 +77,6 @@ private:
     void clearCaches();
 
     z3::context* context;
-    bool getSubstitutableEquality(const z3::expr&, z3::expr*, z3::expr*);
     z3::expr decreaseDeBruijnIndices(const z3::expr&, int, int);
     bool isRelevant(const z3::expr&, int, int);
     z3::expr mk_or(const z3::expr_vector&) const;
@@ -78,18 +85,13 @@ private:
     z3::expr flipQuantifierAndModifyBody(const z3::expr& quantifierExpr, const z3::expr& newBody) const;
     z3::expr applyDer(const z3::expr&) const;
 
-    std::set< std::tuple< const Z3_ast, bool > > processedPolaritiesCache;
-    std::map< std::string, Polarity > variablePolarities;
-    void getVariablePolarities(const z3::expr&, bool);
-
-    z3::expr EliminatePureLiterals(z3::expr&);
-
-    bool isVar(const z3::expr&) const;
     bool propagateUnconstrained;
     bool goalUnconstrained;
     bool produceModels = false;
 
     int lastBound = 0;
+
+    std::vector<std::unique_ptr<SimplificationPass>> usedPasses;
 };
 
 
