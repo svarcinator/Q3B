@@ -7,8 +7,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "No Build type specified; using RELEASE.")
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Debug)
 endif(NOT CMAKE_BUILD_TYPE)
+set(CMAKE_BUILD_TYPE Debug)
 
 file(GLOB Q3B_SRC
     "lib/*.h"
