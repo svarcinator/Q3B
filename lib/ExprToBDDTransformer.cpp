@@ -1307,3 +1307,54 @@ bool ExprToBDDTransformer::isInterrupted()
 {
     return Solver::resultComputed;
 }
+
+
+void ExprToBDDTransformer::pushBackArg(std::vector<BDDInterval>& intervalVec,std::vector<std::pair<z3::expr, unsigned int>>&expOpVec,
+                     ExpensiveOp& opCounter,  const z3::expr& e, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive )
+    {
+        if (config.lazyEvaluation)
+        {
+            auto expOpCount = opCounter.getExpensiveOpNum(e);
+            expOpVec.push_back(std::make_pair(e, expOpCount));
+
+        }
+        else
+        {
+            auto argBdd = getBDDFromExpr(e, boundVars, onlyExistentials, isPositive);
+            intervalVec.push_back(argBdd);
+
+        }
+    }
+
+    template <typename T, typename TorderFunc>
+    void ExprToBDDTransformer::sortVec(std::vector<T>& vec, TorderFunc&& orderExpr)
+    {
+        std::sort(vec.begin(), vec.end(),
+                  [&](const auto &a, const auto &b) -> bool
+                      {
+                          return orderExpr(a, b);
+                      });
+    }
+
+    void ExprToBDDTransformer::sortVec(std::vector<BDDInterval>& vec)
+    {
+        sortVec(vec, [&](auto& a, auto& b) {return bddManager.nodeCount(std::vector<BDD>{a.upper}) < bddManager.nodeCount(std::vector<BDD>{b.upper}) ; } ) ;
+    }
+
+
+    void ExprToBDDTransformer::sortVec(std::vector<std::pair<z3::expr, unsigned int>>& vec)
+    {
+        sortVec(vec, [](auto& a, auto& b) {return a.second < b.second;});
+    }
+
+
+    BDDInterval ExprToBDDTransformer::getBdd(unsigned int i, const std::vector<BDDInterval>& bddSubResults,
+                        const std::vector<std::pair<z3::expr, unsigned int>>& exprExpensiveOpsVec,
+                        const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive)
+    {
+        if (config.lazyEvaluation )
+        {
+            return getBDDFromExpr(exprExpensiveOpsVec[i].first, boundVars, onlyExistentials, isPositive);
+        }
+        return bddSubResults[i];
+    }

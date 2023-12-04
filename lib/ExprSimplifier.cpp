@@ -7,7 +7,7 @@
 
 using namespace z3;
 
-#define DEBUG false
+#define DEBUG true
 
 expr ExprSimplifier::Simplify(expr expression)
 {
@@ -25,52 +25,52 @@ expr ExprSimplifier::Simplify(expr expression)
     while (seen.find(expression.hash()) == seen.end())
     {
         seen.insert(expression.hash());
-	if (expression.is_const())
-	{
-	    return expression;
-	}
-
-	clearCaches();
-
-	expression = PushQuantifierIrrelevantSubformulas(expression);
-        if (!produceModels)
+        if (expression.is_const())
         {
-            expression = ApplyConstantEqualities(expression);
+            return expression;
         }
-	expression = expression.simplify();
-	expression = EliminatePureLiterals(expression);
 
-	for (int i = 0; i < 4; i++)
-	{
-	    expression = negate(expression);
-	    expression = applyDer(expression);
-	}
+        clearCaches();
 
-	clearCaches();
+        expression = PushQuantifierIrrelevantSubformulas(expression);
+            if (!produceModels)
+            {
+                expression = ApplyConstantEqualities(expression);
+            }
+        expression = expression.simplify();
+        expression = EliminatePureLiterals(expression);
 
-	expression = RefinedPushQuantifierIrrelevantSubformulas(expression);
-	expression = applyDer(expression);
+        for (int i = 0; i < 4; i++)
+        {
+            expression = negate(expression);
+            expression = applyDer(expression);
+        }
 
-	for (int i = 0; i < 2; i++)
-	{
-	    expression = negate(expression);
-	    expression = applyDer(expression);
-	}
+        clearCaches();
 
-        expression = ReduceDivRem(expression);
+        expression = RefinedPushQuantifierIrrelevantSubformulas(expression);
+        expression = applyDer(expression);
 
-	if (propagateUnconstrained && !produceModels)
-	{
-	    expression = expression.simplify();
+        for (int i = 0; i < 2; i++)
+        {
+            expression = negate(expression);
+            expression = applyDer(expression);
+        }
 
-	    UnconstrainedVariableSimplifier unconstrainedSimplifier(*context, expression);
-	    unconstrainedSimplifier.SetCountVariablesLocally(true);
-	    unconstrainedSimplifier.SetDagCounting(false);
-            unconstrainedSimplifier.SetGoalUnconstrained(goalUnconstrained);
+            expression = ReduceDivRem(expression);
 
-	    unconstrainedSimplifier.SimplifyIte();
-	    expression = unconstrainedSimplifier.GetExpr();
-	}
+        if (propagateUnconstrained && !produceModels)
+        {
+            expression = expression.simplify();
+
+            UnconstrainedVariableSimplifier unconstrainedSimplifier(*context, expression);
+            unconstrainedSimplifier.SetCountVariablesLocally(true);
+            unconstrainedSimplifier.SetDagCounting(false);
+                unconstrainedSimplifier.SetGoalUnconstrained(goalUnconstrained);
+
+            unconstrainedSimplifier.SimplifyIte();
+            expression = unconstrainedSimplifier.GetExpr();
+        }
     }
 
     pushNegationsCache.clear();
@@ -1139,3 +1139,5 @@ expr ExprSimplifier::ReduceDivRem(const expr &e)
 
     return e;
 }
+
+

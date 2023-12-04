@@ -151,7 +151,6 @@ int main(int argc, char* argv[])
 	{
 
             config.lazyEvaluation = atoi(optarg);
-            std::cout << "lazy eval is on"  << config.lazyEvaluation << std::endl;
             break;
 	}
 

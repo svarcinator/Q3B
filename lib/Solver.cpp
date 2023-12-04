@@ -236,7 +236,7 @@ Result Solver::runOverApproximation(ExprToBDDTransformer &transformer, int bitWi
     std::stringstream ss;
     ss << "Trying bit-width " << bitWidth << ", precision " << precision;
     Logger::Log("Overapproximating solver", ss.str(), 5);
-
+    
     auto returned = transformer.ProcessOverapproximation(bitWidth, precision);
 
     auto result = returned.upper.IsZero() ? UNSAT : SAT;
