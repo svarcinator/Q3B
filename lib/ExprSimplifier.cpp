@@ -10,8 +10,9 @@
 #include "simplificationPasses/PureLiteralEliminator.h"
 
 
+
+
 #define DEBUG true
-#define DEBUG false
 
 using namespace z3;
 
@@ -96,7 +97,12 @@ expr ExprSimplifier::Simplify(expr expression)
     std::cout << expression << std::endl;
     }
 
-    expression = ReorderAndOrArguments(expression);
+
+    if (DEBUG)
+    {
+    std::cout << std::endl << std::endl << "reordered:" << std::endl;
+    std::cout << expression << std::endl;
+    }
 
     context->check_error();
     clearCaches();
@@ -726,20 +732,20 @@ expr ExprSimplifier::flipQuantifierAndModifyBody(const expr& quantifierExpr, con
     Z3_symbol decl_names [numBound];
     for (int i = 0; i < numBound; i++)
     {
-	sorts[i] = Z3_get_quantifier_bound_sort(*context, ast, i);
-	decl_names[i] = Z3_get_quantifier_bound_name(*context, ast, i);
+	    sorts[i] = Z3_get_quantifier_bound_sort(*context, ast, i);
+	    decl_names[i] = Z3_get_quantifier_bound_name(*context, ast, i);
     }
 
     Z3_ast newAst = Z3_mk_quantifier(
-	*context,
-	!Z3_is_quantifier_forall(*context, ast),
-	Z3_get_quantifier_weight(*context, ast),
-	0,
-	{},
-	numBound,
-	sorts,
-	decl_names,
-	(Z3_ast)newBody);
+	                                *context,
+                                    !Z3_is_quantifier_forall(*context, ast),
+                                    Z3_get_quantifier_weight(*context, ast),
+                                    0,
+                                    {},
+                                    numBound,
+                                    sorts,
+                                    decl_names,
+                                    (Z3_ast)newBody);
 
     return to_expr(*context, newAst);
 }
@@ -938,28 +944,76 @@ void ExprSimplifier::ReconstructModel(Model &model)
     }
 }
 
-expr ExprSimplifier::ReorderAndOrArguments( const expr &e) 
+
+expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounter) 
 {
-    if (e.is_var() | e.is_const()) 
+    if (e.is_var() || e.is_const()) 
     {
         return e;
     } 
     else if (e.is_quantifier())
     {
-        auto b = e.body();
-        return ReorderAndOrArguments(b);
+        auto body = e.body();
+        auto newBody = ReorderAndOrArguments(body, opCounter);
+        Z3_ast ast = (Z3_ast)e;
+
+        int numBound = Z3_get_quantifier_num_bound(*context, ast);
+
+        Z3_sort sorts [numBound];
+        Z3_symbol decl_names [numBound];
+        for (int i = 0; i < numBound; i++)
+        {
+            sorts[i] = Z3_get_quantifier_bound_sort(*context, ast, i);
+            decl_names[i] = Z3_get_quantifier_bound_name(*context, ast, i);
+        }
+
+        Z3_ast newAst = Z3_mk_quantifier(
+                                        *context,
+                                        Z3_is_quantifier_forall(*context, ast),
+                                        Z3_get_quantifier_weight(*context, ast),
+                                        0,
+                                        {},
+                                        numBound,
+                                        sorts,
+                                        decl_names,
+                                        (Z3_ast)newBody);
+
+        return to_expr(*context, newAst);
     } 
     else if (e.is_app()) 
     {
         func_decl f = e.decl();
 	    auto decl_kind = f.decl_kind();
+        int numArgs = e.num_args();
 
-        std::cout << "Expression: " << e.to_string() <<  " kind: " << e.decl().kind() << std::endl;
-        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR ) 
+    
+        std::vector<expr> vec;
+        for (int i = 0; i < numArgs; i++)
         {
-            std::cout << "shuffle args" << std::endl;
+            {
+                vec.push_back(ReorderAndOrArguments(e.arg(i), opCounter));
+            }
         }
-       
+        
+        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR )
+        {
+            std::sort(vec.begin(), vec.end(),
+                  [&](const auto &a, const auto &b) -> bool
+                      {
+                          return opCounter.getExpensiveOpNum(a) < opCounter.getExpensiveOpNum(b);
+                      });
+                      
+        expr_vector arguments(*context);
+        for (int i = 0; i < numArgs; i++)
+        {
+            {
+                arguments.push_back(vec[i]);
+            }
+        }
+        expr result = f(arguments);        
+        return result;
+        }
+        
     
     }
     else 

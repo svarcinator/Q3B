@@ -7,6 +7,7 @@
 
 #include "HexHelper.h"
 #include "Solver.h"
+#include "ExpensiveOp.h"
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -1315,23 +1316,6 @@ bool ExprToBDDTransformer::isInterrupted()
     return Solver::resultComputed;
 }
 
-
-void ExprToBDDTransformer::pushBackArg(std::vector<BDDInterval>& intervalVec,std::vector<std::pair<z3::expr, unsigned int>>&expOpVec,
-                     ExpensiveOp& opCounter,  const z3::expr& e, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive )
-    {
-        if (config.lazyEvaluation)
-        {
-            auto expOpCount = opCounter.getExpensiveOpNum(e);
-            expOpVec.push_back(std::make_pair(e, expOpCount));
-
-        }
-        else
-        {
-            auto argBdd = getBDDFromExpr(e, boundVars, onlyExistentials, isPositive);
-            intervalVec.push_back(argBdd);
-
-        }
-    }
 
     template <typename T, typename TorderFunc>
     void ExprToBDDTransformer::sortVec(std::vector<T>& vec, TorderFunc&& orderExpr)

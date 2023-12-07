@@ -7,6 +7,7 @@
 
 #include "SimplificationPass.h"
 #include "Model.h"
+#include "ExpensiveOp.h"
 
 class ExprSimplifier
 {
@@ -32,6 +33,8 @@ public:
       this->context = &ctx;
     }
 
+    
+
     z3::expr Simplify (z3::expr);
     z3::expr PushQuantifierIrrelevantSubformulas(const z3::expr&);
     z3::expr RefinedPushQuantifierIrrelevantSubformulas(const z3::expr&);
@@ -42,7 +45,7 @@ public:
     z3::expr DeCanonizeBoundVariables(const z3::expr&);
     z3::expr StripToplevelExistentials(const z3::expr&);
     z3::expr ReduceDivRem(const z3::expr&);
-    z3::expr ReorderAndOrArguments( const z3::expr& ); 
+    z3::expr ReorderAndOrArguments( const z3::expr&, ExpensiveOp& ); 
     //z3::expr ReorderAndOrArguments( z3::expr& ); 
 
     void SetProduceModels(const bool value)

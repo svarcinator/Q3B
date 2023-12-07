@@ -15,7 +15,6 @@
 #include "Approximated.h"
 #include "Config.h"
 #include "BDDInterval.h"
-#include "ExpensiveOp.h"
 #include <iostream>
 #include <algorithm> 
 
@@ -78,9 +77,6 @@ class ExprToBDDTransformer
     uint posToEvaluate(const z3::expr&, const z3::expr&);
     BDDInterval getImplSubBDD(const uint, const z3::expr&,  const std::vector<boundVar>&, bool onlyExistentials, bool isPositive);
 
-    void pushBackArg(std::vector<BDDInterval>& intervalVec,std::vector<std::pair<z3::expr, unsigned int>>&expOpVec,
-                     ExpensiveOp& opCounter,  const z3::expr& e, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive );
-    
     template <typename T, typename TorderFunc>
     void sortVec(std::vector<T>& vec, TorderFunc&& orderExpr);
 
@@ -98,35 +94,29 @@ class ExprToBDDTransformer
                                  Top&& op, TisDefinite&& isDefinite, TdefaultResult&& defaultResult)
     {
         std::vector<BDDInterval> bddSubResults;
-        ExpensiveOp opCounter;
-        std::vector<std::pair<z3::expr, unsigned int>> exprExpensiveOpsVec;
 
         for (unsigned int i = 0; i < arguments.size(); i++)
         {
             if (isInterrupted()) { std::cout<< "interrupted" << std::endl; return defaultResult; }
-            auto ex = arguments[i].to_string();
-            pushBackArg(bddSubResults, exprExpensiveOpsVec,opCounter, arguments[i], boundVars, onlyExistentials, isPositive );
+            bddSubResults.push_back(getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive));
+
             if (!bddSubResults.empty() &&  isDefinite(bddSubResults.back())) { return bddSubResults.back();  }
         }
         
-        if (exprExpensiveOpsVec.empty() && bddSubResults.empty()) { return defaultResult; }
-        // one of them is empty
-        //sortVec(exprExpensiveOpsVec);
-        sortVec(bddSubResults);
-
-        // random shuffle for demonstrative purposes
-        srand(time(0));  
-        std::random_shuffle (exprExpensiveOpsVec.begin(), exprExpensiveOpsVec.end() );
-        auto toReturn = defaultResult;        
-
-        for (unsigned int i = 0; i < std::max(exprExpensiveOpsVec.size(), bddSubResults.size()); i++)
+        if ( bddSubResults.empty()) { return defaultResult; }
+       
+        if (!config.lazyEvaluation)
         {
-            if (isInterrupted()) { return defaultResult; }
-            auto argBdd = getBdd(i, bddSubResults,exprExpensiveOpsVec, boundVars, onlyExistentials, isPositive );
-            auto e = exprExpensiveOpsVec[i].first.to_string();
-            toReturn = op(toReturn, argBdd);
-            if (isDefinite(toReturn)) { return toReturn; }           
+            sortVec(bddSubResults);
         }
+        
+
+        auto toReturn = defaultResult;  
+        for (auto& argBdd : bddSubResults) {
+            if (isInterrupted()) { return defaultResult; }
+            toReturn = op(toReturn, argBdd);
+            if (isDefinite(toReturn)) { return toReturn; }   
+        }  
 
         return toReturn;
     }

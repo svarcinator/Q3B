@@ -17,7 +17,7 @@ class ExpensiveOp{
 public:
     
    
-    // number of multiplications and deletions in formula
+    // number of multiplications, divisions and shifts in formula
     unsigned int getExpensiveOpNum(const z3::expr&); 
     
     

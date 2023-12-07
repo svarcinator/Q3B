@@ -107,6 +107,12 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
         }
     }
 
+    if (config.lazyEvaluation)
+    {
+        ExpensiveOp opCounter;
+        expr = simplifier.ReorderAndOrArguments(expr, opCounter);
+    }
+
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);
     if (negated)

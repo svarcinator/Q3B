@@ -14,7 +14,7 @@ unsigned int ExpensiveOp::getExpensiveOpNum(const z3::expr&e) {
         return expOpCache[(Z3_ast)e];
     }
 
-    if (e.is_var() | e.is_const()) 
+    if (e.is_var() || e.is_const()) 
 	{
         return 0;
     } 
@@ -30,7 +30,7 @@ unsigned int ExpensiveOp::getExpensiveOpNum(const z3::expr&e) {
 	{
 		exp_ops_sum += getExpensiveOpNum(arg);
 	}
-	if (e.is_bv() & e.is_app()) 
+	if (e.is_bv() && e.is_app()) 
 	{
 		func_decl f = e.decl();
 		auto decl_kind = f.decl_kind();
