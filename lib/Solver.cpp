@@ -109,9 +109,13 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
 
     if (config.lazyEvaluation)
     {
-        ExpensiveOp opCounter;
-        expr = simplifier.ReorderAndOrArguments(expr, opCounter);
-    }
+        ExprInfo exprInformation;
+        expr = simplifier.ReorderAndOrArguments(expr, exprInformation);
+        
+        std::cout << std::endl << std::endl << "reordered:" << std::endl;
+        std::cout << expr << std::endl;
+        
+        }
 
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);

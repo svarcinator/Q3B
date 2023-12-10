@@ -945,7 +945,13 @@ void ExprSimplifier::ReconstructModel(Model &model)
 }
 
 
-expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounter) 
+expr ExprSimplifier::GroupExpr(const expr& e, ExprInfo&)
+{
+    // create list of lists of expr, such that expressions in each inner list share atleast one variable
+    return e;
+}
+
+expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExprInfo& exprInformation) 
 {
     if (e.is_var() || e.is_const()) 
     {
@@ -954,7 +960,7 @@ expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounte
     else if (e.is_quantifier())
     {
         auto body = e.body();
-        auto newBody = ReorderAndOrArguments(body, opCounter);
+        auto newBody = ReorderAndOrArguments(body, exprInformation);
         Z3_ast ast = (Z3_ast)e;
 
         int numBound = Z3_get_quantifier_num_bound(*context, ast);
@@ -982,16 +988,22 @@ expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounte
     } 
     else if (e.is_app()) 
     {
+        
         func_decl f = e.decl();
 	    auto decl_kind = f.decl_kind();
-        int numArgs = e.num_args();
+        auto newExpr = e;
+        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR )
+        {
+            newExpr = GroupExpr(e, exprInformation);
+        }
+        int numArgs = newExpr.num_args();
 
-    
+        // write sort for expr_vector and work directly with expr_vector, not std::vector
         std::vector<expr> vec;
         for (int i = 0; i < numArgs; i++)
         {
             {
-                vec.push_back(ReorderAndOrArguments(e.arg(i), opCounter));
+                vec.push_back(ReorderAndOrArguments(newExpr.arg(i), exprInformation));
             }
         }
         
@@ -1000,9 +1012,9 @@ expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounte
             std::sort(vec.begin(), vec.end(),
                   [&](const auto &a, const auto &b) -> bool
                       {
-                          return opCounter.getExpensiveOpNum(a) < opCounter.getExpensiveOpNum(b);
+                          return exprInformation.getExpensiveOpNum(a) < exprInformation.getExpensiveOpNum(b);
                       });
-                      
+        }
         expr_vector arguments(*context);
         for (int i = 0; i < numArgs; i++)
         {
@@ -1012,9 +1024,6 @@ expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& opCounte
         }
         expr result = f(arguments);        
         return result;
-        }
-        
-    
     }
     else 
     {

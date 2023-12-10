@@ -208,7 +208,7 @@ bool ExprToBDDTransformer::correctBoundVars(const std::vector<boundVar> &boundVa
 
 uint ExprToBDDTransformer::posToEvaluate(const z3::expr& e1, const z3::expr& e2)
 {
-    ExpensiveOp opCounter;
+    ExprInfo opCounter;
     auto n1 = opCounter.getExpensiveOpNum(e1);
     auto n2 = opCounter.getExpensiveOpNum(e2);
     return (n1 <= n2 )? 1 : 0;

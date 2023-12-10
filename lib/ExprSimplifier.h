@@ -45,8 +45,8 @@ public:
     z3::expr DeCanonizeBoundVariables(const z3::expr&);
     z3::expr StripToplevelExistentials(const z3::expr&);
     z3::expr ReduceDivRem(const z3::expr&);
-    z3::expr ReorderAndOrArguments( const z3::expr&, ExpensiveOp& ); 
-    //z3::expr ReorderAndOrArguments( z3::expr& ); 
+    z3::expr ReorderAndOrArguments( const z3::expr&, ExprInfo& ); 
+    z3::expr GroupExpr(const z3::expr&, ExprInfo&);
 
     void SetProduceModels(const bool value)
     {
