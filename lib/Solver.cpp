@@ -109,11 +109,13 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
 
     if (config.lazyEvaluation)
     {
+        Logger::Log("Solver", "Lazy evaluation simplifications.", 1);
         ExprInfo exprInformation;
+        expr = simplifier.GroupExpr(expr, exprInformation);
         expr = simplifier.ReorderAndOrArguments(expr, exprInformation);
         
-        std::cout << std::endl << std::endl << "reordered:" << std::endl;
-        std::cout << expr << std::endl;
+        //std::cout << std::endl << std::endl << "reordered:" << std::endl;
+        //std::cout << expr << std::endl;
         
         }
 
@@ -216,6 +218,18 @@ Result Solver::SolveParallel(z3::expr expr)
 	expr = simplifier.PushNegations(expr);
 	expr = simplifier.StripToplevelExistentials(expr);
     }
+
+    if (config.lazyEvaluation)
+    {
+        Logger::Log("Solver", "Lazy evaluation simplifications.", 1);
+        ExprInfo exprInformation;
+        expr = simplifier.GroupExpr(expr, exprInformation);
+        expr = simplifier.ReorderAndOrArguments(expr, exprInformation);
+        
+        std::cout << std::endl << std::endl << "reordered:" << std::endl;
+        std::cout << expr << std::endl;
+        
+        }
 
     Logger::Log("Solver", "Introducing mul constants.", 1);
     TermConstIntroducer tci(expr.ctx());

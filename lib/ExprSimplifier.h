@@ -47,6 +47,8 @@ public:
     z3::expr ReduceDivRem(const z3::expr&);
     z3::expr ReorderAndOrArguments( const z3::expr&, ExprInfo& ); 
     z3::expr GroupExpr(const z3::expr&, ExprInfo&);
+    z3::expr GroupConnectiveExpr(const z3::expr_vector&  , ExprInfo&, z3::func_decl );
+    bool doOverlap(const std::set<std::string>& ,const std::set<std::string>&);
 
     void SetProduceModels(const bool value)
     {

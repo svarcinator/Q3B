@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
 
     SMTLIBv2Parser::StartContext* tree = parser.start();
 
-    SMTLIBInterpreter interpreter;
-    interpreter.SetConfig(config);
-    interpreter.Run(tree->script());
+    std::unique_ptr<SMTLIBInterpreter> interpreter = std::make_unique<SMTLIBInterpreter>();
+    interpreter->SetConfig(config);
+    interpreter->Run(tree->script());
 }

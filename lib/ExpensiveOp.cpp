@@ -13,7 +13,7 @@ std::set<std::string> ExprInfo::getVars(const z3::expr& e)
         return varsCache[(Z3_ast)e];
     }
 
-	if (e.is_const() && !e.is_numeral())
+	if ((e.is_const() && !e.is_numeral()) || e.is_var())
     {
 		std::string expressionString = e.to_string();
 
@@ -47,6 +47,8 @@ std::set<std::string> ExprInfo::getVars(const z3::expr& e)
 		return exprSet;
     }
 	// no other expression should be here
+	std::cout << e.to_string() << std::endl;
+	std::cout << "is var" << e.is_var() << std::endl;
 	assert(false);
 }
 
