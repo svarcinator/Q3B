@@ -1,5 +1,5 @@
 #!/bin/bash
-
+clear
 echo "#################"
 echo "    COMPILING    "
 echo "#################"
@@ -12,6 +12,6 @@ echo "     RUNNING     "
 echo "#################"
 
 
-./build/q3b --abstraction=over --lazy-evaluation=1 --verbosity=5 /var/tmp/vcloud-q3b/BV/2017-Preiner-keymaera/intersection-example-onelane.proof-node48996.smt2
+./build/q3b --lazy-evaluation=1 --verbosity=5 /var/tmp/vcloud-q3b/BV/2017-Preiner-psyco/144.smt2
 
 

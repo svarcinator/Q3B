@@ -226,8 +226,8 @@ Result Solver::SolveParallel(z3::expr expr)
         expr = simplifier.GroupExpr(expr, exprInformation);
         expr = simplifier.ReorderAndOrArguments(expr, exprInformation);
         
-        std::cout << std::endl << std::endl << "reordered:" << std::endl;
-        std::cout << expr << std::endl;
+        //std::cout << std::endl << std::endl << "reordered:" << std::endl;
+        //std::cout << expr << std::endl;
         
         }
 

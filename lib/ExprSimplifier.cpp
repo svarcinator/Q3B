@@ -5,6 +5,8 @@
 #include <set>
 #include <vector>
 
+#include <bits/stdc++.h> 
+
 #include "ExprSimplifier.h"
 #include "Model.h"
 #include "UnconstrainedVariableSimplifier.h"
@@ -950,6 +952,26 @@ bool ExprSimplifier::doOverlap(const std::set<std::string>& smaller, const std::
     return false;
 }
 
+expr ExprSimplifier::GetSortedExpr( const expr_vector& arguments, ExprInfo& exprInformation , func_decl f)
+{
+    std::vector<expr>vec;
+    for(auto a: arguments)
+    {
+        vec.push_back(a);
+    }
+    std::sort(vec.begin(), vec.end(),
+                  [&](const auto &a, const auto &b) -> bool
+                      {
+                          return exprInformation.getExpensiveOpNum(a) < exprInformation.getExpensiveOpNum(b);
+                      });
+    expr_vector newArguments(*context);
+    for(auto a: vec)
+    {
+        newArguments.push_back(a);
+    }
+    return f(newArguments);
+}
+
 expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo& exprInformation, func_decl f)
 {
     std::vector<std::set<std::string>> sets;
@@ -958,46 +980,33 @@ expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo&
     {
         // for each subformula get indices of sets that have nonempty intersection with set of vars contained in subfomula
         std::vector<unsigned int> intersectionIdx;
-        auto exprVars = exprInformation.getVars(arguments[i]);
-
-        
+        auto exprVars = exprInformation.getVars(arguments[i]);      
         for (int j = 0; j < sets.size(); ++j) 
         {
             if (doOverlap(exprVars, sets[j])) {
                 intersectionIdx.push_back(j);
             }
         }
-        
         if (intersectionIdx.empty()) 
         {
             sets.push_back(exprVars);
-            
-            
         }
         else 
         {
-            
             // merge first set that overlaps with expr variables
             sets[intersectionIdx[0]].merge(exprVars);
-            
             // merge sets
-            
             for (int idx = 1; idx < intersectionIdx.size(); ++idx ) 
             {
                 sets[intersectionIdx[0]].merge(sets[intersectionIdx[idx]]);
             }
-            
-
             // erase merged sets
             for (int idx = 1; idx < intersectionIdx.size(); ++idx ) 
             {
                 sets.erase(sets.begin() + intersectionIdx[idx]);
             }
         }
-
     }
-    
-    
     if (sets.size() >= 2) {
         std::vector<expr_vector> groups;
         for(auto s: sets)
@@ -1010,7 +1019,6 @@ expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo&
                     group.push_back(arguments[i]);
                 }
             }
-            
             if (!group.empty())
                 groups.push_back(group);
         } 
@@ -1028,7 +1036,6 @@ expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo&
         }
         return f(newArguments);
     }
-
     return f(arguments);
 }
 
@@ -1036,6 +1043,17 @@ expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo&
 // For these last 2 methods write fce ExprWalk a dej tomu argument nejakou fci, ktera bude zajistovat co se deje po e.is_app
 
 expr ExprSimplifier::GroupExpr(const expr& e, ExprInfo& exprInformation)
+{
+    return ExprWalk(e, exprInformation, [this](const expr_vector& a, ExprInfo& b, func_decl c){return this->GroupConnectiveExpr(a, b, c);} );
+}
+
+expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExprInfo& exprInformation) 
+{
+    return ExprWalk(e, exprInformation, [this](const expr_vector& a, ExprInfo& b, func_decl c){return this->GetSortedExpr(a, b, c);} );
+}
+
+
+expr ExprSimplifier::ExprWalk( const expr &e, ExprInfo& exprInformation,std::function<expr(const expr_vector&, ExprInfo& , func_decl)> func) 
 {
     // create list of lists of expr, such that expressions in each inner list share atleast one variable
     if (e.is_var() || e.is_const()) 
@@ -1082,94 +1100,17 @@ expr ExprSimplifier::GroupExpr(const expr& e, ExprInfo& exprInformation)
             for (int i = 0; i < numArgs; i++)
             {
                 {
-                    arguments.push_back(GroupExpr(e.arg(i), exprInformation));
+                    arguments.push_back(ExprWalk(e.arg(i), exprInformation, func));
                 }
             }
         
         if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR )
         {
-            return GroupConnectiveExpr(arguments, exprInformation,  f);
+            return func(arguments, exprInformation,  f);
         }
             
         return f(arguments); 
 
-    }
-    else 
-    {
-        std::cout << "else" << std::endl;
-    }
-    return e;
-}
-
-expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExprInfo& exprInformation) 
-{
-    if (e.is_var() || e.is_const()) 
-    {
-        return e;
-    } 
-    else if (e.is_quantifier())
-    {
-        auto body = e.body();
-        auto newBody = ReorderAndOrArguments(body, exprInformation);
-        Z3_ast ast = (Z3_ast)e;
-
-        int numBound = Z3_get_quantifier_num_bound(*context, ast);
-
-        Z3_sort sorts [numBound];
-        Z3_symbol decl_names [numBound];
-        for (int i = 0; i < numBound; i++)
-        {
-            sorts[i] = Z3_get_quantifier_bound_sort(*context, ast, i);
-            decl_names[i] = Z3_get_quantifier_bound_name(*context, ast, i);
-        }
-
-        Z3_ast newAst = Z3_mk_quantifier(
-                                        *context,
-                                        Z3_is_quantifier_forall(*context, ast),
-                                        Z3_get_quantifier_weight(*context, ast),
-                                        0,
-                                        {},
-                                        numBound,
-                                        sorts,
-                                        decl_names,
-                                        (Z3_ast)newBody);
-
-        return to_expr(*context, newAst);
-    } 
-    else if (e.is_app()) 
-    {
-        
-        func_decl f = e.decl();
-	    auto decl_kind = f.decl_kind();
-        
-        int numArgs = e.num_args();
-
-        // write sort for expr_vector and work directly with expr_vector, not std::vector
-        std::vector<expr> vec;
-        for (int i = 0; i < numArgs; i++)
-        {
-            {
-                vec.push_back(ReorderAndOrArguments(e.arg(i), exprInformation));
-            }
-        }
-        
-        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR )
-        {
-            std::sort(vec.begin(), vec.end(),
-                  [&](const auto &a, const auto &b) -> bool
-                      {
-                          return exprInformation.getExpensiveOpNum(a) < exprInformation.getExpensiveOpNum(b);
-                      });
-        }
-        expr_vector arguments(*context);
-        for (int i = 0; i < numArgs; i++)
-        {
-            {
-                arguments.push_back(vec[i]);
-            }
-        }
-        expr result = f(arguments);        
-        return result;
     }
     else 
     {

@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <functional>
 
 #include "SimplificationPass.h"
 #include "Model.h"
@@ -49,6 +50,8 @@ public:
     z3::expr GroupExpr(const z3::expr&, ExprInfo&);
     z3::expr GroupConnectiveExpr(const z3::expr_vector&  , ExprInfo&, z3::func_decl );
     bool doOverlap(const std::set<std::string>& ,const std::set<std::string>&);
+    z3::expr ExprWalk( const z3::expr &, ExprInfo& ,std::function<z3::expr(const z3::expr_vector&, ExprInfo& , z3::func_decl)> );
+    z3::expr GetSortedExpr( const z3::expr_vector& , ExprInfo& , z3::func_decl ) ;
 
     void SetProduceModels(const bool value)
     {
@@ -89,6 +92,7 @@ private:
     z3::expr modifyQuantifierBody(const z3::expr& quantifierExpr, const z3::expr& newBody) const;
     z3::expr flipQuantifierAndModifyBody(const z3::expr& quantifierExpr, const z3::expr& newBody) const;
     z3::expr applyDer(const z3::expr&) const;
+
 
     bool propagateUnconstrained;
     bool goalUnconstrained;
