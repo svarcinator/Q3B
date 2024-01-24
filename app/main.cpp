@@ -149,7 +149,6 @@ int main(int argc, char* argv[])
 	}
     case 'l':
 	{
-
             config.lazyEvaluation = atoi(optarg);
             break;
 	}
