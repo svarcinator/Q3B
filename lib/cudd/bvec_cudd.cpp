@@ -187,8 +187,47 @@ namespace cudd {
 
     Bvec
     Bvec::bvec_add(const Bvec& left, const Bvec& right) {
-	return bvec_add_nodeLimit(left, right, UINT_MAX);
+	    return bvec_add_nodeLimit(left, right, UINT_MAX);
     }
+
+    unsigned int Bvec::get_index_with_no_value() const {
+        // Goes from least significant bit and returns first index that contains ? value.
+        for(unsigned int i = 0; i < m_bitvec.size(); ++i){
+            if (!m_bitvec[i].HasValue())
+                return i;
+        }
+        return m_bitvec.size();        
+    }
+
+    
+    Bvec
+    Bvec::bvec_add_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int nodeLimit, cudd::Bvec lessPreciseBvec) {
+        //can this happen?
+        if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum())
+        {
+            return lessPreciseBvec;
+        }
+
+        if (left.supportSize() > right.supportSize()) {
+            return bvec_add_nodeLimit_imprecise(right, left, nodeLimit, lessPreciseBvec);
+        }
+
+        std::cout << "less precise BW" << lessPreciseBvec.m_bitvec.size() << " # nodes = " << lessPreciseBvec.bddNodes() << std::endl;
+
+        assert(left.bitnum() == lessPreciseBvec.bitnum());
+        
+        auto no_val_idx = lessPreciseBvec.get_index_with_no_value(); // Index of first ? (MaybeBdd without value) value.
+        assert(no_val_idx != 0);                                     // Otherwise it wouldn't be in sameBWImpreciseBvecs cache.
+        MaybeBDD comp = lessPreciseBvec.m_bitvec[no_val_idx-1] ^ left[no_val_idx - 1] ^ right[no_val_idx - 1]; // carry
+        for (size_t i = no_val_idx; i < lessPreciseBvec.bitnum(); ++i){
+            lessPreciseBvec.m_bitvec[no_val_idx] = (left[i] ^ right[i]) ^ comp;
+            if (nodeLimit != UINT_MAX && lessPreciseBvec.bddNodes() > nodeLimit)
+                break;
+            comp = (left[i] & right[i]) | (comp & (left[i] | right[i]));
+        }
+        return lessPreciseBvec;
+        }
+    
 
     Bvec
     Bvec::bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int nodeLimit) {

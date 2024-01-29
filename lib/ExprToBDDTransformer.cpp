@@ -150,6 +150,7 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     {
 	sameBWPreciseBdds.clear();
 	sameBWPreciseBvecs.clear();
+	sameBWImpreciseBvecs.clear();
 	lastBW = variableBitWidth;
     }
 
@@ -700,7 +701,15 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 	    if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
 		operationPrecision != 0)
 	    {
+		auto item = sameBWImpreciseBvecs.find((Z3_ast)e);
+		if (item != sameBWImpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second))
+		{
+			// sem dodam, ze uz je to napocitany castecne
+			std::cout << "Found imprecise addition" << e.to_string() << std::endl;
+			return bvec_assocOp(e, std::bind(Bvec::bvec_add_nodeLimit_imprecise, _1, _2, precisionMultiplier*operationPrecision, (item->second).first.value), boundVars);
+		}
 		return bvec_assocOp(e, std::bind(Bvec::bvec_add_nodeLimit, _1, _2, precisionMultiplier*operationPrecision), boundVars);
+		
 	    }
 
 	    return bvec_assocOp(e, [&] (auto x, auto y) { return x + y; }, boundVars);
@@ -1280,6 +1289,10 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr& expr, 
     {
         sameBWPreciseBvecs.insert({(Z3_ast)expr, {bvec, boundVars}});
     }
+	else 
+	{
+		sameBWImpreciseBvecs.insert({(Z3_ast)expr, {bvec, boundVars}});
+	}
 
     return bvec;
 }
@@ -1309,6 +1322,7 @@ void ExprToBDDTransformer::clearCaches()
     preciseBvecs.clear();
     sameBWPreciseBdds.clear();
     sameBWPreciseBvecs.clear();
+	sameBWImpreciseBvecs.clear();
 }
 
 bool ExprToBDDTransformer::isInterrupted()

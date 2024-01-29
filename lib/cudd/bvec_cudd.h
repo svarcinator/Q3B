@@ -97,6 +97,11 @@ public:
     static Bvec
     bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
 
+    
+    static Bvec
+    bvec_add_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int, cudd::Bvec);
+    
+
     static Bvec
     bvec_sub(const Bvec& left, const Bvec& right);
 
@@ -441,6 +446,9 @@ public:
 
 	return true;
     }
+
+    unsigned int 
+    get_index_with_no_value() const;
 
 private:
 
