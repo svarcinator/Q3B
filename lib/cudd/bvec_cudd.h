@@ -9,10 +9,22 @@
 #include <cuddObj.hh>
 #include "../maybeBdd/maybeBdd.h"
 
+
 namespace cudd {
 
 class Bvec {
+    
     Cudd* m_manager;
+
+    struct Computation_state {
+        unsigned int m = 0;
+        unsigned int i = 0;
+        std::vector<MaybeBDD> bitvec;
+        //Bvec* leftshift;
+    };
+
+    Computation_state state;
+
 
 public:
     std::vector<MaybeBDD> m_bitvec;
@@ -98,8 +110,8 @@ public:
     bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
 
     
-    static Bvec
-    bvec_add_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int, cudd::Bvec);
+    Bvec
+    bvec_add_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int);
     
 
     static Bvec
@@ -113,6 +125,9 @@ public:
 
     static Bvec
     bvec_mul_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
+
+    Bvec
+    bvec_mul_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int);
 
     int
     bvec_divfixed(size_t con, Bvec& result, Bvec& rem) const;
@@ -450,6 +465,8 @@ public:
     unsigned int 
     get_index_with_no_value() const;
 
+    
+
 private:
 
     static Cudd&
@@ -481,6 +498,8 @@ private:
 
     static void
     reserve(Bvec& bitvector, size_t bitnum);
+
+    std::string test = "-";
 };
 
 } // cudd
