@@ -20,15 +20,17 @@ Bvec::Bvec(Cudd &manager)
 Bvec::Bvec(Cudd &manager, size_t bitnum, const MaybeBDD &value)
     : m_manager(&manager), m_bitvec(bitnum, value)
 {
+    state = {0,0,m_bitvec};
 }
 
 Bvec::Bvec(Cudd &manager, size_t bitnum, const BDD &value)
     : m_manager(&manager), m_bitvec(bitnum, MaybeBDD(value))
 {
+    state = {0,0,m_bitvec};
 }
 
 Bvec::Bvec(const Bvec &other)
-    : m_manager(other.m_manager), m_bitvec(other.m_bitvec)
+    : m_manager(other.m_manager),state(other.state), m_bitvec(other.m_bitvec)
 {
 }
 
@@ -131,6 +133,7 @@ Bvec Bvec::bvec_coerce(size_t bits) const
     for (size_t i = 0U; i < minnum; ++i) {
         res[i] = m_bitvec[i];
     }
+    res.state = state;
     return res;
 }
 
@@ -423,10 +426,10 @@ Bvec Bvec::bvec_mul_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
     Bvec leftshift = leftshifttmp.bvec_coerce(bitnum);
 
     /* Shift 'leftshift' i bits left */
-    for (size_t m = bitnum -1;  m >= state.i; --m) {
+    for (int m = bitnum -1;  m >= state.i; --m) {
         leftshift[m] = leftshift[m - state.i];
     }
-    for (size_t m = state.i -1;  m >= 0; --m) {
+    for (int m = state.i -1;  m >= 0; --m) {
         leftshift[m] = MaybeBDD(manager.bddZero());
     }
 
@@ -888,6 +891,7 @@ void Bvec::swap(Bvec &other)
     using std::swap;
     swap(m_manager, other.m_manager);
     swap(m_bitvec, other.m_bitvec);
+    swap(state, other.state);
 }
 
 Bvec Bvec::reserve(Cudd &manager, size_t bitnum)
