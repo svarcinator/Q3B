@@ -234,7 +234,7 @@ Bvec Bvec::bvec_add_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
         return bvec_add_nodeLimit_imprecise(right, left, nodeLimit);
     }
 
-    std::cout << "(self) less precise BW" << m_bitvec.size() << " (self) # nodes = " << bddNodes() << std::endl;
+    std::cout << "(self) less precise BW " << m_bitvec.size() << " (self) # nodes = " << bddNodes() << std::endl;
 
     assert(left.bitnum() == bitnum());
 

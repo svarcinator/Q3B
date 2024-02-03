@@ -560,6 +560,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
         auto decl_kind = f.decl_kind();
 
         if (decl_kind == Z3_OP_BADD) {
+            
             if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
                     operationPrecision != 0) {
                 auto item = sameBWImpreciseBvecs.find((Z3_ast) e);
@@ -1071,6 +1072,10 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr &expr, 
     if (bvec.value.isPrecise()) {
         sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
     } else {
+        if (bvec.value.bddNodes() == 0){
+            //std::cout << expr.to_string();
+            return bvec;
+        }
         sameBWImpreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
     }
 
