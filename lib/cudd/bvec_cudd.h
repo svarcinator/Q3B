@@ -145,6 +145,9 @@ public:
     bvec_ite_nodeLimit(const MaybeBDD& val, const Bvec& left, const Bvec& right, unsigned int);
 
     Bvec
+    bvec_ite_nodeLimit_imprecise(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int );
+
+    Bvec
     bvec_shlfixed(unsigned int pos, const MaybeBDD& con) const;
 
     static Bvec

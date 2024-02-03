@@ -610,6 +610,7 @@ Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec 
             preciseBdds++;
 
             if (nodeLimit != UINT_MAX && res.bddNodes() > nodeLimit) {
+                res.state.i=i;
                 break;
             }
         }
@@ -619,6 +620,30 @@ Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec 
         res.m_bitvec.push_back(MaybeBDD{});
     }
     return res;
+}
+
+Bvec Bvec::bvec_ite_nodeLimit_imprecise(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit)
+{
+
+    if (left.bitnum() != right.bitnum()) {
+        return *this;
+    }
+    
+
+    auto preciseBdds = state.i;
+
+    if (nodeLimit != 0) {
+        for (size_t i = state.i; i < left.bitnum(); ++i) {
+            m_bitvec[i] = (val.Ite(left[i], right[i]));
+
+            preciseBdds++;
+
+            if (nodeLimit != UINT_MAX && bddNodes() > nodeLimit) {
+                break;
+            }
+        }
+    }
+    *this;
 }
 
 Bvec Bvec::bvec_shlfixed(unsigned int pos, const MaybeBDD &con) const
