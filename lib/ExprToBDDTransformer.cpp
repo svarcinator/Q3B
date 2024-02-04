@@ -8,7 +8,7 @@
 #include "HexHelper.h"
 #include "Solver.h"
 
-
+#define DEBUG false
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -566,7 +566,11 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 auto item = sameBWImpreciseBvecs.find((Z3_ast) e);
                 if (item != sameBWImpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
                     
-                    std::cout << "Found imprecise addition" << e.to_string() << std::endl;
+                    if (DEBUG) {
+                        std::cout << "Found imprecise addition" << e.to_string() << std::endl;
+                    }
+                        
+
 					auto bvec = (item->second).first.value;
                     return bvec_assocOp(e, std::bind(&Bvec::bvec_add_nodeLimit_imprecise, &bvec, _1, _2, precisionMultiplier * operationPrecision), boundVars);
                 }
@@ -655,7 +659,11 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
         } else if (decl_kind == Z3_OP_BMUL) {
 			auto item = sameBWImpreciseBvecs.find((Z3_ast) e);
 			if (item != sameBWImpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
-				std::cout << "Found imprecise multiplication" << e.to_string() << std::endl;
+                if (DEBUG) {
+                    std::cout << "Found imprecise multiplication" << e.to_string() << std::endl;
+                }
+				    
+
 				auto bvec = (item->second).first.value;
                 return bvec_assocOp(e, std::bind(&Bvec::bvec_mul_nodeLimit_imprecise, &bvec, _1, _2, precisionMultiplier * operationPrecision), boundVars);
 			}
@@ -679,7 +687,10 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 result = arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
             } else if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
                     operationPrecision != 0) {
-                        std::cout << "Found imprecise division" << std::endl;
+                if (DEBUG){
+                    std::cout << "Found imprecise division" << std::endl;
+                }
+                    
                 auto item = sameBWImpreciseBvecs.find((Z3_ast) e);
 			    if (item != sameBWImpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
                     div = (item->second).first.value;       // unnecessary copy?
@@ -764,10 +775,10 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
             Bvec result(bddManager);
 
             if (config.lazyEvaluation && arg0.lower.IsOne()) {
-                //std::cout << "bvec is one" << std::endl;
+               
                 result = getBvecFromExpr(e.arg(1), boundVars).value;
             } else if (config.lazyEvaluation && arg0.upper.IsZero()) {
-                //std::cout << "bvec is zero" << std::endl;
+               
                 result = getBvecFromExpr(e.arg(2), boundVars).value;
             } else {
                 // TODO: pridat vyhledani impresize bvec (naimpl u me na notebooku, cekam na zmereni  +, *, / abych videla efekt)
@@ -1084,7 +1095,6 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr &expr, 
         sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
     } else {
         if (bvec.value.bddNodes() == 0){
-            //std::cout << expr.to_string();
             return bvec;
         }
         sameBWImpreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });

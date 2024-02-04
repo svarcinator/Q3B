@@ -234,8 +234,6 @@ Bvec Bvec::bvec_add_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
         return bvec_add_nodeLimit_imprecise(right, left, nodeLimit);
     }
 
-    std::cout << "(self) less precise BW " << m_bitvec.size() << " (self) # nodes = " << bddNodes() << std::endl;
-
     assert(left.bitnum() == bitnum());
 
     auto no_val_idx = get_index_with_no_value();                                             // Index of first ? (MaybeBdd without value) value.

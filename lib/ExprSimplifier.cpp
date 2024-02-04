@@ -12,7 +12,7 @@
 
 
 
-#define DEBUG true
+#define DEBUG false
 
 using namespace z3;
 
