@@ -662,6 +662,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
             return bvec_assocOp(
                     e, [&](auto x, auto y) { return bvec_mul(x, y); }, boundVars);
         } else if (decl_kind == Z3_OP_BUREM || decl_kind == Z3_OP_BUREM_I || decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) {
+            // I at the end is operation that assumes that second operand is non-zero
             checkNumberOfArguments<2>(e);
 
             Bvec div = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
@@ -678,7 +679,15 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 result = arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
             } else if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
                     operationPrecision != 0) {
-                result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision);
+                        std::cout << "Found imprecise division" << std::endl;
+                auto item = sameBWImpreciseBvecs.find((Z3_ast) e);
+			    if (item != sameBWImpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
+                    div = (item->second).first.value;       // unnecessary copy?
+                    result = div.bvec_div_nodeLimit_imprecise(arg0, arg1, rem, precisionMultiplier * operationPrecision);
+                } else {
+                    result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision);
+                }
+                
             } else {
                 result = arg0.bvec_div(arg0, arg1, div, rem);
             }
@@ -691,6 +700,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 exit(0);
             }
         } else if (decl_kind == Z3_OP_BSDIV || decl_kind == Z3_OP_BSDIV_I) {
+            // WHAT  (study this)
             checkNumberOfArguments<2>(e);
 
             expr arg0 = e.arg(0);
@@ -760,6 +770,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 //std::cout << "bvec is zero" << std::endl;
                 result = getBvecFromExpr(e.arg(2), boundVars).value;
             } else {
+                // TODO: pridat vyhledani impresize bvec (naimpl u me na notebooku, cekam na zmereni  +, *, / abych videla efekt)
                 auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
                 auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
 

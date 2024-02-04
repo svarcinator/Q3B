@@ -17,10 +17,13 @@ class Bvec {
     Cudd* m_manager;
 
     struct Computation_state {
-        unsigned int m = 0;
-        unsigned int i = 0;
-        std::vector<MaybeBDD> bitvec;
-        //Bvec* leftshift;
+        unsigned int m = 0; //multiplication
+        unsigned int i = 0; // multiplication, division
+        unsigned int preciseBdds = 0; // multiplication, division 
+        std::vector<MaybeBDD> bitvec; // multiplication, division (res)
+        Bvec *remainder;    // division
+        Bvec *div;          // division
+
     };
 
     Computation_state state;
@@ -137,6 +140,10 @@ public:
 
     static int
     bvec_div_nodeLimit(const Bvec& left, const Bvec& right, Bvec& result, Bvec& rem, unsigned int);
+
+    int 
+    bvec_div_nodeLimit_imprecise(const Bvec &left, const Bvec &right, Bvec &rem, unsigned int );
+
 
     static Bvec
     bvec_ite(const MaybeBDD& val, const Bvec& left, const Bvec& right);

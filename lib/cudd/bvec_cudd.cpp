@@ -20,13 +20,13 @@ Bvec::Bvec(Cudd &manager)
 Bvec::Bvec(Cudd &manager, size_t bitnum, const MaybeBDD &value)
     : m_manager(&manager), m_bitvec(bitnum, value)
 {
-    state = {0,0,m_bitvec};
+    state = {0,0,0,m_bitvec};
 }
 
 Bvec::Bvec(Cudd &manager, size_t bitnum, const BDD &value)
     : m_manager(&manager), m_bitvec(bitnum, MaybeBDD(value))
 {
-    state = {0,0,m_bitvec};
+    state = {0,0,0,m_bitvec};
 }
 
 Bvec::Bvec(const Bvec &other)
@@ -124,11 +124,11 @@ Bvec Bvec::bvec_var(Cudd &manager, size_t bitnum, int offset, int step)
 }
 
 Bvec Bvec::bvec_coerce(size_t bits) const
-/*
-    bits = sum of bits of left and right
-*/
 {
-    Bvec res = bvec_false(*m_manager, bits);
+    /*
+        Restrains the number of bites in result to arg bits
+    */
+    Bvec res = bvec_false(*m_manager, bits); // bvec of 0
     size_t minnum = std::min(bits, bitnum());
     for (size_t i = 0U; i < minnum; ++i) {
         res[i] = m_bitvec[i];
@@ -375,11 +375,12 @@ Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
                     res.state.i = i;
                     res.state.m = m;
                     res.state.bitvec = res.m_bitvec;
-                    //res.state.leftshift = &leftshift;
 
                     if (m >= preciseBdds) {
                         preciseBdds++;
                     }
+                    res.state.preciseBdds = preciseBdds;
+
 
                     break;
                 }
@@ -420,7 +421,8 @@ Bvec Bvec::bvec_mul_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
         return bvec_mul_nodeLimit_imprecise(right, left, nodeLimit);
     }
 
-    unsigned int preciseBdds = get_index_with_no_value(); // Index of first ? (MaybeBdd without value) value.
+    unsigned int preciseBdds = state.preciseBdds;
+    assert(preciseBdds == get_index_with_no_value());
     m_bitvec = state.bitvec;                              // restore state of computation from before
     Bvec leftshifttmp = Bvec(left);
     Bvec leftshift = leftshifttmp.bvec_coerce(bitnum);
@@ -453,6 +455,7 @@ Bvec Bvec::bvec_mul_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
                     if (m >= preciseBdds) {
                         preciseBdds++;
                     }
+                    state.preciseBdds = preciseBdds;
 
                     break;
                 }
@@ -554,16 +557,26 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
         }
 
         preciseBdds++;
-        if (nodeLimit != UINT_MAX && (res.bddNodes() > nodeLimit || rem.bddNodes() > nodeLimit)) {
-            break;
-        }
-
         /* Shift 'div' one bit right */
         for (size_t j = 0U; j < bitnum - 1; ++j) {
             div[j] = div[j + 1];
         }
 
         div[bitnum - 1] = MaybeBDD(manager.bddZero());
+
+        if (nodeLimit != UINT_MAX && (res.bddNodes() > nodeLimit || rem.bddNodes() > nodeLimit)) {
+            // Save the computation state
+            res.state.i = i;
+            res.state.preciseBdds = preciseBdds;
+            res.state.bitvec = res.m_bitvec;
+            // save rem
+            res.state.remainder = &rem;
+            res.state.div = &div;
+
+            break;
+        }
+
+        
     }
 
     //the first bit of the result was not stored
@@ -587,6 +600,74 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
     return 0;
 }
 
+
+int Bvec::bvec_div_nodeLimit_imprecise(const Bvec &left, const Bvec &right, Bvec &remainder, unsigned int nodeLimit)
+{
+    // make func shorter
+   
+    size_t bitnum = left.bitnum() + right.bitnum();
+    if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
+        return 1;
+    }
+
+    Bvec &rem = *state.remainder;
+    Bvec &div = *state.div;
+
+    unsigned int preciseBdds = state.preciseBdds;
+
+    for (size_t i = state.i; i < right.bitnum() + 1; ++i) {
+
+        MaybeBDD divLteRem = bvec_lte(div, rem);
+        Bvec remSubDiv = bvec_sub(rem, div);
+
+        for (size_t j = 0U; j < bitnum; ++j) {
+            rem[j] = divLteRem.Ite(remSubDiv[j], rem[j]);
+        }
+
+        if (i > 0) {
+            m_bitvec[right.bitnum() - i] = divLteRem;
+        }
+
+        preciseBdds++;
+        /* Shift 'div' one bit right */
+        for (size_t j = 0U; j < bitnum - 1; ++j) {
+            div[j] = div[j + 1];
+        }
+        div[bitnum - 1] = MaybeBDD(m_manager->bddZero());
+
+        if (nodeLimit != UINT_MAX && (bddNodes() > nodeLimit || rem.bddNodes() > nodeLimit)) {
+            // Save the computation state
+            state.i = i;
+            state.preciseBdds = preciseBdds;
+            state.bitvec = m_bitvec;
+            // save rem
+            state.remainder = &rem;
+            state.div = &div;
+            break;
+        }        
+    }
+
+    //the first bit of the result was not stored
+    if (preciseBdds > 0) {
+        preciseBdds--;
+    }
+
+    //forget lower bits, as then can be imprecise
+    for (unsigned int i = preciseBdds; i < right.bitnum(); i++) {
+        m_bitvec[right.bitnum() - i - 1] = MaybeBDD{};
+    }
+
+    if (preciseBdds != right.bitnum()) {
+        for (unsigned int i = 0; i < right.bitnum(); i++) {
+            rem[i] = MaybeBDD{};
+        }
+    }
+
+    remainder = rem.bvec_coerce(right.bitnum());
+    return 0;
+}
+
+
 Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right)
 {
     return bvec_ite_nodeLimit(val, left, right, UINT_MAX);
@@ -594,6 +675,7 @@ Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right)
 
 Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
+    // not used anywhere
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     Bvec res(manager);
 
@@ -624,6 +706,7 @@ Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec 
 
 Bvec Bvec::bvec_ite_nodeLimit_imprecise(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
+    // neni pouzito nikde, bude zapojeno po otestovani
 
     if (left.bitnum() != right.bitnum()) {
         return *this;
