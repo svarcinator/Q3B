@@ -571,7 +571,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     }
                         
 
-					auto bvec = (item->second).first.value;
+					cudd::Bvec& bvec = (item->second).first.value;
                     return bvec_assocOp(e, std::bind(&Bvec::bvec_add_nodeLimit_imprecise, &bvec, _1, _2, precisionMultiplier * operationPrecision), boundVars);
                 }
                 return bvec_assocOp(e, std::bind(Bvec::bvec_add_nodeLimit, _1, _2, precisionMultiplier * operationPrecision), boundVars);
@@ -664,7 +664,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 }
 				    
 
-				auto bvec = (item->second).first.value;
+				cudd::Bvec& bvec = (item->second).first.value;
                 return bvec_assocOp(e, std::bind(&Bvec::bvec_mul_nodeLimit_imprecise, &bvec, _1, _2, precisionMultiplier * operationPrecision), boundVars);
 			}
             return bvec_assocOp(
@@ -968,6 +968,8 @@ BDDInterval ExprToBDDTransformer::bvec_ult(Bvec &arg0, Bvec &arg1, bool isPositi
     return BDDInterval{ Bvec::bvec_lth(arg0, arg1).GetBDD(bddManager.bddZero()) };
 }
 
+// @pre: e.num_args() > 0
+// @pre: op is associative
 Approximated<Bvec> ExprToBDDTransformer::bvec_assocOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
 {
     unsigned num = e.num_args();

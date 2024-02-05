@@ -20,13 +20,13 @@ Bvec::Bvec(Cudd &manager)
 Bvec::Bvec(Cudd &manager, size_t bitnum, const MaybeBDD &value)
     : m_manager(&manager), m_bitvec(bitnum, value)
 {
-    state = {0,0,0,m_bitvec};
+    state = {0,0,m_bitvec};
 }
 
 Bvec::Bvec(Cudd &manager, size_t bitnum, const BDD &value)
     : m_manager(&manager), m_bitvec(bitnum, MaybeBDD(value))
 {
-    state = {0,0,0,m_bitvec};
+    state = {0,0,m_bitvec};
 }
 
 Bvec::Bvec(const Bvec &other)
@@ -128,8 +128,9 @@ Bvec Bvec::bvec_coerce(size_t bits) const
     /*
         Restrains the number of bites in result to arg bits
     */
+    
+    const size_t minnum = std::min(bits, bitnum());
     Bvec res = bvec_false(*m_manager, bits); // bvec of 0
-    size_t minnum = std::min(bits, bitnum());
     for (size_t i = 0U; i < minnum; ++i) {
         res[i] = m_bitvec[i];
     }
@@ -213,14 +214,14 @@ Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
     return bvec_add_nodeLimit(left, right, UINT_MAX);
 }
 
-unsigned int Bvec::get_index_with_no_value() const
+unsigned int Bvec::count_precise_bdds() const
 {
-    // Goes from least significant bit and returns first index that contains ? value.
+    unsigned int counter = 0;
     for (unsigned int i = 0; i < m_bitvec.size(); ++i) {
-        if (!m_bitvec[i].HasValue())
-            return i;
+        if (m_bitvec[i].HasValue())
+            ++counter;
     }
-    return m_bitvec.size();
+    return counter;
 }
 
 Bvec Bvec::bvec_add_nodeLimit_imprecise(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
@@ -236,7 +237,7 @@ Bvec Bvec::bvec_add_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
 
     assert(left.bitnum() == bitnum());
 
-    auto no_val_idx = get_index_with_no_value();                                             // Index of first ? (MaybeBdd without value) value.
+    auto no_val_idx = count_precise_bdds();                                             // Index of first ? (MaybeBdd without value) value.
     assert(no_val_idx != 0);                                                                 // Otherwise it wouldn't be in sameBWImpreciseBvecs cache.
     MaybeBDD comp = m_bitvec[no_val_idx - 1] ^ left[no_val_idx - 1] ^ right[no_val_idx - 1]; // carry
     for (size_t i = no_val_idx; i < bitnum(); ++i) {
@@ -339,6 +340,54 @@ Bvec Bvec::bvec_mul(const Bvec &left, const Bvec &right)
     return bvec_mul_nodeLimit(left, right, UINT_MAX);
 }
 
+
+
+// @pre: v.bitnum() > 0 
+void shift_left(Bvec& v, BDD zero){
+    /* Shift 'leftshift' one bit left */
+    for (size_t m = v.bitnum() - 1U; m >= 1U; --m) {
+        v[m] = v[m - 1];
+    }
+
+    v[0] = MaybeBDD(zero);
+}
+
+std::pair<bool, size_t> Bvec::add_leftshift_to_result(Bvec const &leftshift,
+                    Bvec const& right,
+                    unsigned int nodeLimit,
+                    unsigned int preciseBdds,
+                    size_t i)
+{
+    auto const reachedLimit = [nodeLimit](MaybeBDD const &mb){
+        return nodeLimit != UINT_MAX && mb.NodeCount() > nodeLimit;
+    };
+
+    Bvec added = bvec_add(*this, leftshift);
+    for (size_t m = state.m; m < right.bitnum(); ++m) {
+        m_bitvec[m] = right[i].Ite(added[m], m_bitvec[m]);
+        if (reachedLimit(m_bitvec[m])) {
+            state = Computation_state{m + 1, i, m_bitvec, nullptr, nullptr };
+            return std::pair(true, m);
+        }
+    }
+    return std::pair(false, right.bitnum() - 1);
+}
+
+
+/* Shift 'leftshift' n bits left */
+Bvec shift_left_by_n(Bvec v, size_t n, BDD zero) {
+    if (n == 0) {
+        return v;
+    }
+    for (int m = v.bitnum() - 1;  m >= n; --m) {
+        v[m] = v[m - n];
+    }
+    for (int m = n - 1;  m >= 0; --m) {
+        v[m] = MaybeBDD(zero);
+    }
+    return v;
+}
+
 Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
     size_t bitnum = std::max(left.bitnum(), right.bitnum());
@@ -377,7 +426,7 @@ Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
                     if (m >= preciseBdds) {
                         preciseBdds++;
                     }
-                    res.state.preciseBdds = preciseBdds;
+                    
 
 
                     break;
@@ -397,6 +446,7 @@ Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
         }
 
         leftshift[0] = MaybeBDD(manager.bddZero());
+        assert(preciseBdds - 1 == i);
     }
 
     for (size_t m = preciseBdds; m < bitnum; ++m) {
@@ -406,9 +456,37 @@ Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     return res;
 }
 
+Bvec Bvec::multiplication_body(Bvec& leftshift, Bvec& right, unsigned int nodeLimit, const size_t bitnum, unsigned int preciseBdds)
+{
+    Cudd &manager = check_same_cudd(*leftshift.m_manager, *right.m_manager);
+    for (size_t i = state.i; i < right.bitnum(); ++i) {
+        if (right[i].IsZero()) {
+            preciseBdds++;
+        } else {
+            
+            auto [tooManyNodes, lastAddedBit] =  add_leftshift_to_result(leftshift, right, nodeLimit, preciseBdds, i);
+            if (lastAddedBit >= preciseBdds) {
+                preciseBdds++;
+            }
+            if (tooManyNodes) {
+                break;
+            }
+        }
+
+        shift_left(leftshift,  manager.bddZero()) ;
+    }
+
+    for (size_t m = preciseBdds; m < bitnum; ++m) {
+        m_bitvec[m] = MaybeBDD{};
+    }
+
+    return *this;
+}
+
+// @param nodeLimit: maximal number of nodes in one BDD-bit. if UINT_MAX, then no limit
 Bvec Bvec::bvec_mul_nodeLimit_imprecise(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
-    size_t bitnum = std::max(left.bitnum(), right.bitnum());
+    const size_t bitnum = std::max(left.bitnum(), right.bitnum());
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
 
     if (left.bitnum() == 0 || right.bitnum() == 0) {
@@ -418,60 +496,28 @@ Bvec Bvec::bvec_mul_nodeLimit_imprecise(const Bvec &left, const Bvec &right, uns
     if (left.supportSize() > right.supportSize()) {
         return bvec_mul_nodeLimit_imprecise(right, left, nodeLimit);
     }
+    
+    Bvec leftshift = shift_left_by_n(left.bvec_coerce(bitnum), state.i, manager.bddZero());
 
-    unsigned int preciseBdds = state.preciseBdds;
-    assert(preciseBdds == get_index_with_no_value());
+    unsigned int preciseBdds = count_precise_bdds();
+    //assert(preciseBdds == get_index_with_no_value());
     m_bitvec = state.bitvec;                              // restore state of computation from before
-    Bvec leftshifttmp = Bvec(left);
-    Bvec leftshift = leftshifttmp.bvec_coerce(bitnum);
-
-    /* Shift 'leftshift' i bits left */
-    for (int m = bitnum -1;  m >= state.i; --m) {
-        leftshift[m] = leftshift[m - state.i];
-    }
-    for (int m = state.i -1;  m >= 0; --m) {
-        leftshift[m] = MaybeBDD(manager.bddZero());
-    }
 
     for (size_t i = state.i; i < right.bitnum(); ++i) {
         if (right[i].IsZero()) {
             preciseBdds++;
         } else {
-            Bvec added = bvec_add(*this, leftshift);
-
-            bool tooManyNodes = false;
-            for (size_t m = state.m; m < right.bitnum(); ++m) {
-                m_bitvec[m] = right[i].Ite(added[m], m_bitvec[m]);
-
-                if (nodeLimit != UINT_MAX && m_bitvec[m].NodeCount() > nodeLimit) {
-                    tooManyNodes = true;
-
-                    state.i = i;
-                    state.m = m;
-                    state.bitvec = m_bitvec;
-
-                    if (m >= preciseBdds) {
-                        preciseBdds++;
-                    }
-                    state.preciseBdds = preciseBdds;
-
-                    break;
-                }
-            }
-
-            if (tooManyNodes) {
-                break;
-            } else {
+            
+            auto [tooManyNodes, lastAddedBit] =  add_leftshift_to_result(leftshift, right, nodeLimit, preciseBdds, i);
+            if (lastAddedBit >= preciseBdds) {
                 preciseBdds++;
             }
+            if (tooManyNodes) {
+                break;
+            }
         }
 
-        /* Shift 'leftshift' one bit left */
-        for (size_t m = bitnum - 1U; m >= 1U; --m) {
-            leftshift[m] = leftshift[m - 1];
-        }
-
-        leftshift[0] = MaybeBDD(manager.bddZero());
+        shift_left(leftshift,  manager.bddZero()) ;
     }
 
     for (size_t m = preciseBdds; m < bitnum; ++m) {
@@ -565,7 +611,6 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
         if (nodeLimit != UINT_MAX && (res.bddNodes() > nodeLimit || rem.bddNodes() > nodeLimit)) {
             // Save the computation state
             res.state.i = i;
-            res.state.preciseBdds = preciseBdds;
             res.state.bitvec = res.m_bitvec;
             // save rem
             res.state.remainder = &rem;
@@ -610,8 +655,8 @@ int Bvec::bvec_div_nodeLimit_imprecise(const Bvec &left, const Bvec &right, Bvec
 
     Bvec &rem = *state.remainder;
     Bvec &div = *state.div;
-
-    unsigned int preciseBdds = state.preciseBdds;
+    //
+    unsigned int preciseBdds = bitnum - 1 - count_precise_bdds();
 
     for (size_t i = state.i; i < right.bitnum() + 1; ++i) {
 
@@ -636,7 +681,6 @@ int Bvec::bvec_div_nodeLimit_imprecise(const Bvec &left, const Bvec &right, Bvec
         if (nodeLimit != UINT_MAX && (bddNodes() > nodeLimit || rem.bddNodes() > nodeLimit)) {
             // Save the computation state
             state.i = i;
-            state.preciseBdds = preciseBdds;
             state.bitvec = m_bitvec;
             // save rem
             state.remainder = &rem;

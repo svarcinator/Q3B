@@ -17,9 +17,8 @@ class Bvec {
     Cudd* m_manager;
 
     struct Computation_state {
-        unsigned int m = 0; //multiplication
-        unsigned int i = 0; // multiplication, division
-        unsigned int preciseBdds = 0; // multiplication, division 
+        size_t m; //multiplication
+        size_t i; // multiplication, division
         std::vector<MaybeBDD> bitvec; // multiplication, division (res)
         Bvec *remainder;    // division
         Bvec *div;          // division
@@ -126,11 +125,22 @@ public:
     static Bvec
     bvec_mul(const Bvec& left, const Bvec& right);
 
+    Bvec 
+    multiplication_body(Bvec& leftshift, Bvec& right, unsigned int , const size_t ,  unsigned int);
+
     static Bvec
     bvec_mul_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
 
     Bvec
     bvec_mul_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int);
+
+
+    std::pair<bool, size_t>
+    add_leftshift_to_result(Bvec const &,
+                    Bvec const& ,
+                    unsigned int ,
+                    unsigned int ,
+                    size_t );
 
     int
     bvec_divfixed(size_t con, Bvec& result, Bvec& rem) const;
@@ -473,7 +483,7 @@ public:
     }
 
     unsigned int 
-    get_index_with_no_value() const;
+    count_precise_bdds() const;
 
     
 
