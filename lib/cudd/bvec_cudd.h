@@ -8,25 +8,34 @@
 #include <algorithm>
 #include <cuddObj.hh>
 #include "../maybeBdd/maybeBdd.h"
+#include <sstream> 
 
+struct Computation_state {
+    unsigned int m = 0; //multiplication
+    unsigned int i = 0; // multiplication, division
+    unsigned int preciseBdds = 0;
+    std::vector<MaybeBDD> bitvec; // multiplication, division (res)
+    std::vector<MaybeBDD> remainder;    // division
+    std::vector<MaybeBDD> div ;         // division
+
+    std::string to_string() const {
+    std::stringstream ss;
+    ss << "Computation state\n m: " << m << "\n i: " << i<< "\n PreciseBdds: " << preciseBdds << "\n Size: " << bitvec.size()  << std::endl;
+    for(unsigned int i = 0; i < bitvec.size(); ++i) {
+        ss << " Pos=" << i << ", value/nodes=" << bitvec[i].HasValue() << "/" << bitvec[i].NodeCount() << std::endl;
+    }
+    return ss.str();
+}
+
+};
 
 namespace cudd {
+
+
 
 class Bvec {
     
     Cudd* m_manager;
-
-    struct Computation_state {
-        size_t m; //multiplication
-        size_t i; // multiplication, division
-        std::vector<MaybeBDD> bitvec; // multiplication, division (res)
-        Bvec *remainder;    // division
-        Bvec *div;          // division
-
-    };
-
-    Computation_state state;
-
 
 public:
     std::vector<MaybeBDD> m_bitvec;
@@ -40,6 +49,8 @@ public:
     Bvec(Cudd& manager, size_t bitnum, const MaybeBDD& value);
 
     Bvec(const Bvec& other);
+
+    Bvec(Cudd& manager, std::vector<MaybeBDD> bitvec);
 
     Bvec& operator=(Bvec other);
 
@@ -96,6 +107,9 @@ public:
     int
     bvec_val() const;
 
+    static bool 
+    state_is_fresh(const Computation_state& state);
+
     static Bvec
     bvec_copy(const Bvec& other);
 
@@ -108,13 +122,12 @@ public:
     static Bvec
     bvec_add(const Bvec& left, const Bvec& right);
 
-    static Bvec
-    bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
+    static void
+    add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry);
 
-    
-    Bvec
-    bvec_add_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int);
-    
+
+    static Bvec
+    bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int, Computation_state&);  
 
     static Bvec
     bvec_sub(const Bvec& left, const Bvec& right);
@@ -125,22 +138,21 @@ public:
     static Bvec
     bvec_mul(const Bvec& left, const Bvec& right);
 
-    Bvec 
-    multiplication_body(Bvec& leftshift, Bvec& right, unsigned int , const size_t ,  unsigned int);
+    static void 
+    multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int , const size_t ,  Computation_state&);
+
+    static Bvec 
+    bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int , Computation_state& );
 
     static Bvec
     bvec_mul_nodeLimit(const Bvec& left, const Bvec& right, unsigned int);
 
-    Bvec
-    bvec_mul_nodeLimit_imprecise(const Bvec& left, const Bvec& right, unsigned int);
 
-
-    std::pair<bool, size_t>
+    static bool
     add_leftshift_to_result(Bvec const &,
                     Bvec const& ,
                     unsigned int ,
-                    unsigned int ,
-                    size_t );
+                    Computation_state& );
 
     int
     bvec_divfixed(size_t con, Bvec& result, Bvec& rem) const;
@@ -148,21 +160,20 @@ public:
     static int
     bvec_div(const Bvec& left, const Bvec& right, Bvec& result, Bvec& rem);
 
+    static void 
+    div_body(const Bvec &right, const size_t bitnum, unsigned int nodeLimit, Computation_state& state, MaybeBDD zero,Bvec& div, Bvec& rem);
+
+
     static int
-    bvec_div_nodeLimit(const Bvec& left, const Bvec& right, Bvec& result, Bvec& rem, unsigned int);
+    bvec_div_nodeLimit(const Bvec& left, const Bvec& right, Bvec& result, Bvec& rem, unsigned int, Computation_state&);
 
-    int 
-    bvec_div_nodeLimit_imprecise(const Bvec &left, const Bvec &right, Bvec &rem, unsigned int );
-
-
+    static void
+    ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state);
     static Bvec
     bvec_ite(const MaybeBDD& val, const Bvec& left, const Bvec& right);
 
     static Bvec
-    bvec_ite_nodeLimit(const MaybeBDD& val, const Bvec& left, const Bvec& right, unsigned int);
-
-    Bvec
-    bvec_ite_nodeLimit_imprecise(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int );
+    bvec_ite_nodeLimit(const MaybeBDD& val, const Bvec& left, const Bvec& right, unsigned int, Computation_state&);
 
     Bvec
     bvec_shlfixed(unsigned int pos, const MaybeBDD& con) const;
@@ -454,6 +465,18 @@ public:
 	return count;
     }
 
+    static unsigned int bddNodes(const std::vector<MaybeBDD>& bitvec)
+    {
+	auto count = 0U;
+
+	for (const auto &bdd : bitvec)
+	{
+	    count += bdd.NodeCount();
+	}
+
+	return count;
+    }
+
     unsigned int supportSize() const
     {
         std::set<unsigned int> support;
@@ -482,8 +505,8 @@ public:
 	return true;
     }
 
-    unsigned int 
-    count_precise_bdds() const;
+    static unsigned int 
+    count_precise_bdds(const std::vector<MaybeBDD>& bitvec);
 
     
 

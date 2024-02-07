@@ -56,11 +56,12 @@ class ExprToBDDTransformer
     std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> sameBWPreciseBdds;
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> sameBWPreciseBvecs;
 
-    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> sameBWImpreciseBvecs;
+    std::map<const Z3_ast, std::pair<Computation_state , std::vector<boundVar>>> sameBWImpreciseBvecStates;
 
 
     Approximated<Bvec> insertIntoCaches(const z3::expr&, const Approximated<Bvec>&, const std::vector<boundVar>&);
     BDDInterval insertIntoCaches(const z3::expr&, const BDDInterval&, const std::vector<boundVar>&, bool);
+    void insertStateIntoCaches(const z3::expr &expr, const Computation_state& , const std::vector<boundVar> &,  const Approximated<Bvec>&, const bool);
 
     std::set<Z3_ast> processedVarsCache;
 
@@ -140,7 +141,7 @@ class ExprToBDDTransformer
 
     int cacheHits = 0;
 
-    Bvec bvec_mul(Bvec&, Bvec&);
+    Bvec bvec_mul(Bvec&, Bvec&, Computation_state&);
     BDDInterval bvec_ule(Bvec&, Bvec&, bool);
     BDDInterval bvec_ult(Bvec&, Bvec&, bool);
     Approximated<Bvec> bvec_assocOp(const z3::expr&, const std::function<Bvec(Bvec, Bvec)>&, const std::vector<boundVar>&);
