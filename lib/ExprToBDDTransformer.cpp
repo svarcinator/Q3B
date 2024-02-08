@@ -8,7 +8,7 @@
 #include "HexHelper.h"
 #include "Solver.h"
 
-#define DEBUG false
+#define DEBUG true
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -573,8 +573,6 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 
 					Computation_state state = sameBWImpreciseBvecStates.at((Z3_ast)e).first;    // if reference (not copy), exeption
                     auto res =  bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-                    //insertStateIntoCaches(e, state, boundVars, res, true);
-                    //auto c = sameBWImpreciseBvecStates.at((Z3_ast)e).first;
                     return res;
                 }
                 
@@ -805,14 +803,38 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                
                 result = getBvecFromExpr(e.arg(2), boundVars).value;
             } else {
-                // TODO: pridat vyhledani impresize bvec (naimpl u me na notebooku, cekam na zmereni  +, *, / abych videla efekt)
+
                 auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
                 auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
-
                 auto maybeArg0 = MaybeBDD(arg0.upper);
-                result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
+
+                if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
+                    operationPrecision != 0) {
+
+                    auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
+                    if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
+                        if (DEBUG){
+                        std::cout << "Found imprecise ITE" << std::endl;
+                        }
+                        Computation_state state =  sameBWImpreciseBvecStates[e].first;    
+                        result = Bvec::bvec_ite_nodeLimit(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
+                    
+                        insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, true);
+                        
+                    
+                    } else {
+                        Computation_state state = {0,0,0,std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
+                
+                        result = Bvec::bvec_ite_nodeLimit(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
+                        insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, false);
+                        
+                    }
+                    
+                } else {
+                    result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
                         arg1,
                         arg2);
+                }               
             }
 
             return insertIntoCaches(e, { result, APPROXIMATED, APPROXIMATED }, boundVars);
