@@ -216,6 +216,13 @@ Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
     return bvec_add_nodeLimit(left, right, UINT_MAX, state);
 }
 
+Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
+{
+    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    return bvec_add_nodeLimit(left, right, nodeLimit, state);
+
+}
+
 unsigned int Bvec::count_precise_bdds(const std::vector<MaybeBDD>& bitvec)
 {
     unsigned int counter = 0;
@@ -242,48 +249,8 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
 }
 
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
-{
-    // prev impl
-    Cudd& manager = check_same_cudd(*left.m_manager, *right.m_manager);
-    Bvec res(manager);
-    MaybeBDD comp(manager.bddZero());
-
-   
-    if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum())
-    {
-        return res;
-    }
-
-    if (left.supportSize() > right.supportSize()) {
-        return bvec_add_nodeLimit(right, left, nodeLimit, state);
-    }
-
-    reserve(res, left.bitnum());
-
-	unsigned int preciseBdds = 0;
-    for (size_t i = 0u; i < left.bitnum(); ++i) {
-
-        res.m_bitvec.push_back((left[i] ^ right[i]) ^ comp);
-
-    preciseBdds++;
-    if (nodeLimit != UINT_MAX && res.bddNodes() > nodeLimit)
-    {
-    break;
-    }
-
-        comp = (left[i] & right[i]) | (comp & (left[i] | right[i]));
-    }
-
-	for (size_t i = (size_t)preciseBdds; i < left.bitnum(); i++)
-	{
-	    res.m_bitvec.push_back(MaybeBDD{});
-	}
-
-    //return res;
-
-    // current impl
-    
-    //Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
+{    
+    Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
         return Bvec(manager);
     }
@@ -305,8 +272,7 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     //std::cout << "After body \n" <<state.to_string();
     // if not preciselly computed, most significant MaybeBDDs already have ? value
 
-    return Bvec(manager, state.bitvec);
-    
+    return Bvec(manager, state.bitvec); 
 }
 
 Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right)

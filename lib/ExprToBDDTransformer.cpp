@@ -579,15 +579,15 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 
                     return res;
                 }
-                
-                Computation_state state = {0,0,0,std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
-                if (state.i != 0) {
-                    std::cout << "State.i is not 0" << std::endl;
+                if (e.num_args() == 2){
+                    Computation_state state = {0,0,0,std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
+                    auto res =  bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
+                    insertStateIntoCaches(e, state, boundVars, res, false);
+                    return res;
+                } else {
+                    return bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision); }, boundVars);
                 }
-                auto f = [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); };
-                auto res =  bvec_assocOp( e, f, boundVars);
-                insertStateIntoCaches(e, state, boundVars, res, false);
-                return res;
+                
             }
 
             return bvec_assocOp(
@@ -675,19 +675,28 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 if (DEBUG) {
                     std::cout << "Found imprecise multiplication" << e.to_string() << std::endl;
                 }
+                // operation has to be binary, otherwise it wouldn't be in the state cache
                 Computation_state state =  sameBWImpreciseBvecStates.at(e).first;
                 auto res =  bvec_assocOp(
-                    e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
+                    e, [&](auto x, auto y) { return bvec_mul(x, y, state,true); }, boundVars);
 
                 insertStateIntoCaches(e, state, boundVars, res, true);
                 return res;
+                
+                
 			}
             Computation_state state = {0,0,0,std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
-            auto res =  bvec_assocOp(
-                    e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
+            if (e.num_args() == 2){
+                
+                auto res =  bvec_assocOp(
+                        e, [&](auto x, auto y) { return bvec_mul(x, y, state, true); }, boundVars);
+                
+                insertStateIntoCaches(e, state, boundVars, res, false);
+                return res;
+            }
+            return bvec_assocOp(
+                        e, [&](auto x, auto y) { return bvec_mul(x, y, state, false); }, boundVars);
             
-            insertStateIntoCaches(e, state, boundVars, res, false);
-            return res;
             
             
         } else if (decl_kind == Z3_OP_BUREM || decl_kind == Z3_OP_BUREM_I || decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) {
@@ -927,7 +936,7 @@ BDDInterval ExprToBDDTransformer::ProcessOverapproximation(int bitWidth, unsigne
     return loadBDDsFromExpr(expression);
 }
 
-Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state& state)
+Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state& state, bool isBinaryOp)
 {
     unsigned int bitNum = arg0.bitnum();
 
@@ -984,8 +993,11 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state& s
     }
 
     if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
-		
-        return Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
+		if (isBinaryOp){
+            return Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
+        }
+        return Bvec::bvec_mul_nodeLimit(arg0, arg1, precisionMultiplier * operationPrecision).bvec_coerce(bitNum);
+        
     }
 
     return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);

@@ -141,7 +141,7 @@ class ExprToBDDTransformer
 
     int cacheHits = 0;
 
-    Bvec bvec_mul(Bvec&, Bvec&, Computation_state&);
+    Bvec bvec_mul(Bvec&, Bvec&, Computation_state&, bool);
     BDDInterval bvec_ule(Bvec&, Bvec&, bool);
     BDDInterval bvec_ult(Bvec&, Bvec&, bool);
     Approximated<Bvec> bvec_assocOp(const z3::expr&, const std::function<Bvec(Bvec, Bvec)>&, const std::vector<boundVar>&);

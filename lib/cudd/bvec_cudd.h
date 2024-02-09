@@ -127,7 +127,10 @@ public:
 
 
     static Bvec
-    bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int, Computation_state&);  
+    bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int, Computation_state&); 
+
+    static Bvec
+    bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int); 
 
     static Bvec
     bvec_sub(const Bvec& left, const Bvec& right);
