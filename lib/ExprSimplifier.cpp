@@ -1036,7 +1036,6 @@ expr ExprSimplifier::GetSortedExpr( const expr_vector& arguments, ExpensiveOp& e
                       {
                           return exprInformation.getExpensiveOpNum(a) < exprInformation.getExpensiveOpNum(b);
                       });
-    
     expr_vector newArguments(*context);
     for(auto a: vec)
     {
@@ -1045,12 +1044,35 @@ expr ExprSimplifier::GetSortedExpr( const expr_vector& arguments, ExpensiveOp& e
     return f(newArguments);
 }
 
-expr ExprSimplifier::ReorderAndOrArguments( const expr &e, ExpensiveOp& exprInformation) 
+expr ExprSimplifier::ReorderAndOrArguments( const expr &e) 
 {
-    return ExprWalk(e, exprInformation, [this](const expr_vector& a, ExpensiveOp& b, func_decl c){return this->GetSortedExpr(a, b, c);} );
+    ExpensiveOp exprInformation;
+    std::set<Z3_decl_kind> declKinds = {Z3_OP_AND, Z3_OP_OR};
+    return ExprWalk(e, declKinds,exprInformation, [this](expr_vector& a, ExpensiveOp& b, func_decl c){return this->GetSortedExpr(a, b, c);} );
 }
 
-expr ExprSimplifier::ExprWalk( const expr &e, ExpensiveOp& exprInformation,std::function<expr(const expr_vector&, ExpensiveOp& , func_decl)> func) 
+// @pre number of args >= 2
+expr ExprSimplifier::MakeBinary( expr_vector& arguments, ExpensiveOp& exprInformation , func_decl f) {
+    
+    if (arguments.size() == 2) {
+        return f(arguments[0], arguments[1]);
+    }
+    auto arg1 = arguments.back();
+    arguments.pop_back();
+    return f(arg1, MakeBinary(arguments, exprInformation, f));
+
+   
+
+}
+expr ExprSimplifier::MakeAssocOpBinary( const expr &e) 
+{
+    ExpensiveOp exprInformation;
+    std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BMUL};
+    return  ExprWalk(e, declKinds,exprInformation, [this]( expr_vector& a, ExpensiveOp& b, func_decl c){return this->MakeBinary(a, b, c);} );
+    
+}
+
+expr ExprSimplifier::ExprWalk( const expr &e, const std::set<Z3_decl_kind>& declKinds, ExpensiveOp& exprInformation,std::function<expr( expr_vector&, ExpensiveOp& , func_decl)> func) 
 {
     // create list of lists of expr, such that expressions in each inner list share atleast one variable
     if (e.is_var() || e.is_const()) 
@@ -1060,7 +1082,7 @@ expr ExprSimplifier::ExprWalk( const expr &e, ExpensiveOp& exprInformation,std::
     else if (e.is_quantifier())
     {
         auto body = e.body();
-        auto newBody = ReorderAndOrArguments(body, exprInformation);
+        auto newBody = ExprWalk(body, declKinds, exprInformation, func);
         Z3_ast ast = (Z3_ast)e;
 
         int numBound = Z3_get_quantifier_num_bound(*context, ast);
@@ -1097,11 +1119,12 @@ expr ExprSimplifier::ExprWalk( const expr &e, ExpensiveOp& exprInformation,std::
             for (int i = 0; i < numArgs; i++)
             {
                 {
-                    arguments.push_back(ExprWalk(e.arg(i), exprInformation, func));
+                    arguments.push_back(ExprWalk(e.arg(i), declKinds,exprInformation, func));
                 }
             }
+       
         
-        if (decl_kind == Z3_OP_AND || decl_kind == Z3_OP_OR )
+        if (declKinds.find(decl_kind) != declKinds.end())
         {
             return func(arguments, exprInformation,  f);
         }
@@ -1115,3 +1138,4 @@ expr ExprSimplifier::ExprWalk( const expr &e, ExpensiveOp& exprInformation,std::
     }
     return e;
 }
+ 

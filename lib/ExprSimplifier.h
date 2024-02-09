@@ -46,8 +46,12 @@ public:
     z3::expr StripToplevelExistentials(const z3::expr&);
     z3::expr ReduceDivRem(const z3::expr&);
     z3::expr GetSortedExpr( const z3::expr_vector& , ExpensiveOp& , z3::func_decl ) ;
-    z3::expr ReorderAndOrArguments( const z3::expr&, ExpensiveOp& ); 
-    z3::expr ExprWalk( const z3::expr &, ExpensiveOp& ,std::function<z3::expr(const z3::expr_vector&, ExpensiveOp& , z3::func_decl)> );
+    z3::expr ReorderAndOrArguments( const z3::expr& ); 
+    z3::expr MakeBinary( z3::expr_vector& , ExpensiveOp&  , z3::func_decl f);
+    z3::expr MakeAssocOpBinary( const z3::expr &e );
+    //z3::expr ExprWalk( const z3::expr &, ExpensiveOp& ,std::function<z3::expr(const z3::expr_vector&, ExpensiveOp& , z3::func_decl)> );
+    z3::expr ExprWalk( const z3::expr &, const std::set<Z3_decl_kind>& , ExpensiveOp& ,std::function<z3::expr( z3::expr_vector&, ExpensiveOp& , z3::func_decl)> ) ;
+
     //z3::expr ReorderAndOrArguments( const z3::expr&, ExpensiveOp& ); 
     //z3::expr ReorderAndOrArguments( z3::expr& ); 
 

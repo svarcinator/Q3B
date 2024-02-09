@@ -91,11 +91,11 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
             expr = tci.FlattenMul(expr);
         }
     }
-
+    
     if (config.lazyEvaluation) {
-        ExpensiveOp opCounter;
-        expr = simplifier.ReorderAndOrArguments(expr, opCounter);
+        expr = simplifier.ReorderAndOrArguments(expr);
     }
+    expr = simplifier.MakeAssocOpBinary(expr);
 
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);
@@ -189,9 +189,9 @@ Result Solver::SolveParallel(z3::expr expr)
     TermConstIntroducer tci(expr.ctx());
     auto overExpr = config.addCongruences ? tci.FlattenMul(expr) : expr;
     if (config.lazyEvaluation) {
-        ExpensiveOp opCounter;
-        expr = simplifier.ReorderAndOrArguments(expr, opCounter);
+        expr = simplifier.ReorderAndOrArguments(expr);
     }
+    expr = simplifier.MakeAssocOpBinary(expr);
 
     Logger::Log("Solver", "Starting solver threads.", 1);
     auto config = this->config;
