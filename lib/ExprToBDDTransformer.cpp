@@ -566,7 +566,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     operationPrecision != 0) {
                     
                 auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
-                if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second) && false) {
+                if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
                     
                     if (DEBUG) {
                         std::cout << "Found imprecise addition" << e.to_string() << std::endl;
@@ -671,7 +671,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);
         } else if (decl_kind == Z3_OP_BMUL) {
 			auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
-			if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second) && false) {
+			if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
                 if (DEBUG) {
                     std::cout << "Found imprecise multiplication" << e.to_string() << std::endl;
                 }
