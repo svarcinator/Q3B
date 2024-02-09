@@ -435,6 +435,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
                 //the bound variables with the same names
                 bddExprCache = oldBDDCache;
                 bvecExprCache = oldBvecCache;
+                
                 return result;
             }
         } else {
@@ -565,7 +566,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     operationPrecision != 0) {
                     
                 auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
-                if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
+                if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second) && false) {
                     
                     if (DEBUG) {
                         std::cout << "Found imprecise addition" << e.to_string() << std::endl;
@@ -573,12 +574,14 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 
 					Computation_state state = sameBWImpreciseBvecStates.at((Z3_ast)e).first;    // if reference (not copy), exeption
                     auto res =  bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-                    //insertStateIntoCaches(e, state, boundVars, res, true);
-                    //auto c = sameBWImpreciseBvecStates.at((Z3_ast)e).first;
+                    insertStateIntoCaches(e, state, boundVars, res, true);
                     return res;
                 }
                 
                 Computation_state state = {0,0,0,std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
+                if (state.i != 0) {
+                    std::cout << "State.i is not 0" << std::endl;
+                }
                 auto res =  bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
                 insertStateIntoCaches(e, state, boundVars, res, false);
                 return res;
@@ -665,7 +668,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);
         } else if (decl_kind == Z3_OP_BMUL) {
 			auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
-			if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
+			if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second) && false) {
                 if (DEBUG) {
                     std::cout << "Found imprecise multiplication" << e.to_string() << std::endl;
                 }
@@ -1126,7 +1129,7 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr &expr, 
 
 void ExprToBDDTransformer::insertStateIntoCaches(const z3::expr &expr, const Computation_state& state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool expr_already_in_map)
 {
-    if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0 ){
+    if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0  && false){
             if (expr_already_in_map){
                 sameBWImpreciseBvecStates[expr] = { state, boundVars };
                 return;

@@ -235,7 +235,7 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
         carry = (left[state.i] & right[state.i]) | (carry & (left[state.i] | right[state.i]));
         ++state.i;
         ++state.preciseBdds;
-        if (nodeLimit != UINT_MAX && Bvec::bddNodes(state.bitvec) > 2 * nodeLimit) {
+        if (nodeLimit != UINT_MAX && Bvec::bddNodes(state.bitvec) >  nodeLimit) {
             return;
         }
     }
@@ -243,7 +243,47 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
 
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {
-    Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
+    // prev impl
+    Cudd& manager = check_same_cudd(*left.m_manager, *right.m_manager);
+    Bvec res(manager);
+    MaybeBDD comp(manager.bddZero());
+
+   
+    if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum())
+    {
+        return res;
+    }
+
+    if (left.supportSize() > right.supportSize()) {
+        return bvec_add_nodeLimit(right, left, nodeLimit, state);
+    }
+
+    reserve(res, left.bitnum());
+
+	unsigned int preciseBdds = 0;
+    for (size_t i = 0u; i < left.bitnum(); ++i) {
+
+        res.m_bitvec.push_back((left[i] ^ right[i]) ^ comp);
+
+    preciseBdds++;
+    if (nodeLimit != UINT_MAX && res.bddNodes() > nodeLimit)
+    {
+    break;
+    }
+
+        comp = (left[i] & right[i]) | (comp & (left[i] | right[i]));
+    }
+
+	for (size_t i = (size_t)preciseBdds; i < left.bitnum(); i++)
+	{
+	    res.m_bitvec.push_back(MaybeBDD{});
+	}
+
+    //return res;
+
+    // current impl
+    
+    //Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
         return Bvec(manager);
     }
@@ -258,13 +298,15 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
         //state.bitvec MaybeBdd vec already created in previous iterations 
         carry = state.bitvec[state.preciseBdds - 1] ^ left[state.preciseBdds - 1] ^ right[state.preciseBdds - 1];
         //std::cout << state.to_string();
-        assert(state.preciseBdds == count_precise_bdds(state.bitvec));
+        //assert(state.preciseBdds == count_precise_bdds(state.bitvec));
     }
 
     add_body(left, right, nodeLimit,state, carry);
     //std::cout << "After body \n" <<state.to_string();
     // if not preciselly computed, most significant MaybeBDDs already have ? value
+
     return Bvec(manager, state.bitvec);
+    
 }
 
 Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right)

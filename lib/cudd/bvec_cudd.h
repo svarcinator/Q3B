@@ -12,7 +12,7 @@
 
 struct Computation_state {
     unsigned int m = 0; //multiplication
-    unsigned int i = 0; // multiplication, division
+    unsigned int i = 0u; // multiplication, division
     unsigned int preciseBdds = 0;
     std::vector<MaybeBDD> bitvec; // multiplication, division (res)
     std::vector<MaybeBDD> remainder;    // division
