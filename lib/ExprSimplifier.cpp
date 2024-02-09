@@ -1040,8 +1040,6 @@ expr ExprSimplifier::GroupConnectiveExpr(const expr_vector& arguments, ExprInfo&
 }
 
 
-// For these last 2 methods write fce ExprWalk a dej tomu argument nejakou fci, ktera bude zajistovat co se deje po e.is_app
-
 expr ExprSimplifier::GroupExpr(const expr& e, ExprInfo& exprInformation)
 {
     return ExprWalk(e, exprInformation, [this](const expr_vector& a, ExprInfo& b, func_decl c){return this->GroupConnectiveExpr(a, b, c);} );
