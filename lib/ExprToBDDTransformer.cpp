@@ -584,7 +584,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 if (state.i != 0) {
                     std::cout << "State.i is not 0" << std::endl;
                 }
-                auto res =  bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
+                auto f = [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); };
+                auto res =  bvec_assocOp( e, f, boundVars);
                 insertStateIntoCaches(e, state, boundVars, res, false);
                 return res;
             }

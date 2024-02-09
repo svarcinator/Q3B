@@ -188,6 +188,10 @@ Result Solver::SolveParallel(z3::expr expr)
     Logger::Log("Solver", "Introducing mul constants.", 1);
     TermConstIntroducer tci(expr.ctx());
     auto overExpr = config.addCongruences ? tci.FlattenMul(expr) : expr;
+    if (config.lazyEvaluation) {
+        ExpensiveOp opCounter;
+        expr = simplifier.ReorderAndOrArguments(expr, opCounter);
+    }
 
     Logger::Log("Solver", "Starting solver threads.", 1);
     auto config = this->config;
