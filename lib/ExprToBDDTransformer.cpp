@@ -8,7 +8,7 @@
 #include "HexHelper.h"
 #include "Solver.h"
 
-#define DEBUG true
+#define DEBUG false
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -1168,7 +1168,7 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr &expr, 
 
 void ExprToBDDTransformer::insertStateIntoCaches(const z3::expr &expr, const Computation_state& state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool expr_already_in_map)
 {
-    if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0  && false){
+    if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0 ){
             if (expr_already_in_map){
                 sameBWImpreciseBvecStates[expr] = { state, boundVars };
                 return;
