@@ -249,14 +249,69 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
 }
 
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
-{    
-    Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
+{   
+    
+    Cudd& manager = check_same_cudd(*left.m_manager, *right.m_manager);
+    /*
+    Bvec res(manager);
+    MaybeBDD comp(manager.bddZero());
+
+    if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum())
+    {
+        return res;
+    }
+
+    if (left.supportSize() > right.supportSize()) {
+        return bvec_add_nodeLimit(right, left, nodeLimit, state);
+    }
+
+    reserve(res, left.bitnum());
+
+	unsigned int preciseBdds = 0;
+    for (size_t i = 0U; i < left.bitnum(); ++i) {
+
+        res.m_bitvec.push_back((left[i] ^ right[i]) ^ comp);
+
+    preciseBdds++;
+    if (nodeLimit != UINT_MAX && res.bddNodes() > nodeLimit)
+    {
+    break;
+    }
+
+        comp = (left[i] & right[i]) | (comp & (left[i] | right[i]));
+    }
+
+	for (size_t i = (size_t)preciseBdds; i < left.bitnum(); i++)
+	{
+	    res.m_bitvec.push_back(MaybeBDD{});
+	}
+
+    //return res;
+    
+    
+    
+    std::stringstream ss;
+    ss << "Computation state\n "  << "\n i: " << Bvec::count_precise_bdds(res.m_bitvec) << "\n PreciseBdds: " << preciseBdds << "\n Size: " << res.m_bitvec.size()  << std::endl;
+    for(unsigned int i = 0; i < res.m_bitvec.size(); ++i) {
+        ss << " Pos=" << i << ", value/nodes=" << res.m_bitvec[i].HasValue() << "/" << res.m_bitvec[i].NodeCount() << std::endl;
+    }
+
+
+    std::cout << "Result: " << ss.str() << std::endl;
+    */
+    
+    
+    // my solution
+    
+    //Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
         return Bvec(manager);
     }
     if (left.supportSize() > right.supportSize()) {
         return bvec_add_nodeLimit(right, left, nodeLimit, state);
     }
+
+    
 
     MaybeBDD carry(manager.bddZero());   // carry bit
     if (state_is_fresh(state)){
@@ -272,7 +327,12 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     //std::cout << "After body \n" <<state.to_string();
     // if not preciselly computed, most significant MaybeBDDs already have ? value
 
-    return Bvec(manager, state.bitvec); 
+    auto res2 =  Bvec(manager, state.bitvec);
+    //std::cout << "In the end" << std::endl;
+    
+    //std::cout << state.to_string() << std::endl;
+    
+    return res2;
 }
 
 Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right)
@@ -386,6 +446,8 @@ Bvec shift_left_by_n(Bvec v, size_t n, BDD zero) {
 
 void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int nodeLimit, const size_t bitnum, Computation_state& state)
 {
+    
+    
     Cudd &manager = check_same_cudd(*leftshift.m_manager, *right.m_manager);
 
     while (state.i < right.bitnum()) {
@@ -418,6 +480,7 @@ bool Bvec::state_is_fresh(const Computation_state& state)
 // @param nodeLimit: maximal number of nodes in one BDD-bit. if UINT_MAX, then no limit
 Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {
+    
     size_t bitnum = std::max(left.bitnum(), right.bitnum());
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     Bvec res = bvec_false(manager, bitnum);

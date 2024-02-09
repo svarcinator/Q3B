@@ -1074,7 +1074,6 @@ expr ExprSimplifier::MakeAssocOpBinary( const expr &e)
 
 expr ExprSimplifier::ExprWalk( const expr &e, const std::set<Z3_decl_kind>& declKinds, ExpensiveOp& exprInformation,std::function<expr( expr_vector&, ExpensiveOp& , func_decl)> func) 
 {
-    // create list of lists of expr, such that expressions in each inner list share atleast one variable
     if (e.is_var() || e.is_const()) 
     {
         return e;

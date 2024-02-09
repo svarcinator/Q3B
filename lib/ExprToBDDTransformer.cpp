@@ -426,6 +426,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             if (Z3_is_quantifier_forall(*context, ast)) {
                 //only existentials so far, but this one is universal
                 bodyBdd = getBDDFromExpr(e.body(), newBoundVars, false, isPositive);
+                sameBWImpreciseBvecStates.clear();  // otherwise problematic 
             } else {
                 //only existentials so far and this one is also existential
                 auto oldBDDCache = bddExprCache;
@@ -585,6 +586,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                     insertStateIntoCaches(e, state, boundVars, res, false);
                     return res;
                 } else {
+                    //assert(false); // preprocessing of the formula should prevent this
                     return bvec_assocOp( e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision); }, boundVars);
                 }
                 
@@ -693,6 +695,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                 
                 insertStateIntoCaches(e, state, boundVars, res, false);
                 return res;
+            }else {
+                //assert(false); // prevented in preprocessing
             }
             return bvec_assocOp(
                         e, [&](auto x, auto y) { return bvec_mul(x, y, state, false); }, boundVars);
@@ -1168,13 +1172,19 @@ Approximated<Bvec> ExprToBDDTransformer::insertIntoCaches(const z3::expr &expr, 
 
 void ExprToBDDTransformer::insertStateIntoCaches(const z3::expr &expr, const Computation_state& state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool expr_already_in_map)
 {
+    //std::cout << "insertStateIntoCaches " << expr.to_string() << " state: " << state.to_string() << "  already in map? " << expr_already_in_map << std::endl;;
     if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0 ){
             if (expr_already_in_map){
                 sameBWImpreciseBvecStates[expr] = { state, boundVars };
                 return;
             }
             sameBWImpreciseBvecStates.insert({ (Z3_ast) expr, { state, boundVars } });
+            //std::cout << "Expr " << expr.to_string() << " inserted" << std::endl;
         }
+    // if precise and in sameBWImpreciseBvecStates -> remove
+    if(expr_already_in_map && bvec.value.isPrecise()){
+        sameBWImpreciseBvecStates.erase(expr);
+    }
 
     
 }

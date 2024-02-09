@@ -333,6 +333,16 @@ Result SolveParallelAndGoalUnconstrainedLazy(std::string filename)
     return interpreter.Run(tree->script());
 }
 
+TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
+{
+    REQUIRE( SolveWithoutApprox("../tests/data/AR-fixpoint-1.smt2") == UNSAT );
+    REQUIRE( SolveWithoutApprox("../tests/problematic/188.smt2") == SAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/problematic/188.smt2", OVERAPPROXIMATION) == SAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/problematic/188.smt2", UNDERAPPROXIMATION) == SAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/problematic/vsl.proof-node1722.smt2", OVERAPPROXIMATION) == UNSAT );
+   
+}
+
 TEST_CASE( "Without approximations", "[noapprox]" )
 {
     REQUIRE( SolveWithoutApprox("../tests/data/AR-fixpoint-1.smt2") == UNSAT );
@@ -416,7 +426,7 @@ TEST_CASE( "With variable approximations -- lazy", "[variableapprox]" )
 TEST_CASE( "With bothLimit approximations", "[bothlimitapprox]" )
 {
     REQUIRE( SolveWithBothLimitApprox("../tests/data/RNDPRE_4_42.smt2", OVERAPPROXIMATION) == UNSAT );
-    //REQUIRE( SolveWithBothLimitApprox("../tests/data/RND_6_4.smt2", UNDERAPPROXIMATION) == SAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/data/RND_6_4.smt2", UNDERAPPROXIMATION) == SAT );
     REQUIRE( SolveWithBothLimitApprox("../tests/data/jain_7_true-unreach-call_true-no-overflow.i_61.smt2", OVERAPPROXIMATION) == UNSAT );
 
     //correct model returned by an overapproximation
@@ -460,12 +470,13 @@ TEST_CASE( "With parallel approximations --lazy", "[parallel]" )
     REQUIRE( SolveParallelAndGoalUnconstrainedLazy ("../tests/data/003.smt2") == SAT );
 }
 
-
 TEST_CASE( "SMT-COMP 2018", "[smtcomp18]" )
 {
     REQUIRE( SolveWithVariableApprox( "../tests/data/smtcomp18/01.smt2", UNDERAPPROXIMATION ) != SAT );
     REQUIRE( SolveWithBothLimitApprox( "../tests/data/smtcomp18/02.smt2", OVERAPPROXIMATION, 1 ) != UNSAT );
 }
+
+
 
 
 TEST_CASE( "SMT-COMP 2018 --lazy", "[smtcomp18]" )
@@ -482,6 +493,8 @@ TEST_CASE( "Without approximations -- goal unconstrained", "[goalunconstrained]"
     REQUIRE( SolveWithoutApproxAndGoalUnconstrained( "../tests/data/check_bvsle_bvashr0_4bit.smt2" ) != SAT );
     REQUIRE( SolveWithoutApproxAndGoalUnconstrained( "../tests/data/check_bvslt_bvashr0_4bit.smt2" ) != SAT );
 }
+
+
 
 TEST_CASE( "SMT-LIB", "[smtlib]" )
 {
