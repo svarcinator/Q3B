@@ -63,6 +63,7 @@ class ExprToBDDTransformer
     BDDInterval insertIntoCaches(const z3::expr&, const BDDInterval&, const std::vector<boundVar>&, bool);
     void insertStateIntoCaches(const z3::expr &expr, const Computation_state& , const std::vector<boundVar> &,  const Approximated<Bvec>&, const bool);
 
+    
     std::set<Z3_ast> processedVarsCache;
 
     z3::context* context;

@@ -131,6 +131,13 @@ public:
 
     static Bvec
     bvec_add_nodeLimit(const Bvec& left, const Bvec& right, unsigned int); 
+    static void 
+    sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry);
+    static Bvec
+    bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit);
+
+    static Bvec
+    bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& );
 
     static Bvec
     bvec_sub(const Bvec& left, const Bvec& right);
