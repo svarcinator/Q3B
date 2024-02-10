@@ -340,6 +340,8 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/188.smt2", OVERAPPROXIMATION) == SAT );
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/188.smt2", UNDERAPPROXIMATION) == SAT );
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/vsl.proof-node1722.smt2", OVERAPPROXIMATION) == UNSAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
+    REQUIRE( SolveWithoutApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
    
 }
 
