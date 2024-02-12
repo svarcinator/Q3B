@@ -1,0 +1,42 @@
+Dotaz -- Martin
+
+vsl.proof-node1722
+Mám následující formuli: 
+
+(declare-fun A () (_ BitVec 32))
+(declare-fun vsluscore6dollarskuscore2 () (_ BitVec 32))
+(declare-fun v1uscore3dollarskuscore2 () (_ BitVec 32))
+(declare-fun B () (_ BitVec 32))
+(declare-fun ep () (_ BitVec 32))
+(declare-fun x1uscore3dollarskuscore1 () (_ BitVec 32))
+(declare-fun vsluscore8dollarskuscore0 () (_ BitVec 32))
+(declare-fun ts1uscore0 () (_ BitVec 32))
+(declare-fun t8uscore0dollarskuscore0 () (_ BitVec 32))
+(declare-fun xsluscore8dollarskuscore0 () (_ BitVec 32))
+(assert (not (exists ((ts1uscore0 (_ BitVec 32))) (let ((?v_0 (bvneg B))) (=> (and (and (and (and (and (and (and (and (and (=> (and (bvsle (_ bv0 32) ts1uscore0) (bvsle ts1uscore0 t8uscore0dollarskuscore0)) (and (bvsge (bvadd (bvmul ?v_0 ts1uscore0) v1uscore3dollarskuscore2) (_ bv0 32)) (bvsle ts1uscore0 ep))) (bvsge t8uscore0dollarskuscore0 (_ bv0 32))) (bvsge vsluscore8dollarskuscore0 (_ bv0 32))) (bvsge xsluscore8dollarskuscore0 (bvadd (bvadd x1uscore3dollarskuscore1 (bvsdiv (bvsub (bvmul v1uscore3dollarskuscore2 v1uscore3dollarskuscore2) (bvmul vsluscore8dollarskuscore0 vsluscore8dollarskuscore0)) (bvmul (_ bv2 32) B))) (bvmul (bvadd (bvsdiv A B) (_ bv1 32)) (bvadd (bvmul (bvsdiv A (_ bv2 32)) (bvmul ep ep)) (bvmul ep v1uscore3dollarskuscore2)))))) (bvsge v1uscore3dollarskuscore2 (_ bv0 32))) (bvsge vsluscore6dollarskuscore2 (_ bv0 32))) (bvsle v1uscore3dollarskuscore2 vsluscore6dollarskuscore2)) (bvsge A (_ bv0 32))) (bvsgt B (_ bv0 32))) (bvsgt ep (_ bv0 32))) (bvsge (bvadd (bvmul ?v_0 t8uscore0dollarskuscore0) v1uscore3dollarskuscore2) (_ bv0 32)))))))
+
+
+Po simplifikacích vypadá takto:
+
+(bvslt #x00000000 ep)
+     (bvsle #x00000000 v1uscore3dollarskuscore2)
+     (bvsle #x00000000 t8uscore0dollarskuscore0)
+     (bvsle #x00000000 vsluscore6dollarskuscore2)
+     (bvsle v1uscore3dollarskuscore2 vsluscore6dollarskuscore2)
+     (bvslt (bvadd (bvmul #xffffffff B t8uscore0dollarskuscore0)
+                   v1uscore3dollarskuscore2)
+            #x00000000)
+     (forall ((|0| (_ BitVec 32)))
+       (! (let ((a!1 (and (bvsle |0| ep)
+                          (bvsle #x00000000
+                                 (bvadd (bvmul #xffffffff B |0|)
+                                        v1uscore3dollarskuscore2)))))
+            (or (bvslt |0| #x00000000) (bvslt t8uscore0dollarskuscore0 |0|) a!1))
+          :weight 0)))
+          
+Tzn vidím jednu univerzálně kvantifikovanou proměnnou. 
+Po implementaci využívání imprecise computed Bvecs se stalo, že underaproximace vrátila SAT, přestože by správně měla vrátit, že neví (tedy unknown).
+Udělala jsem tedy to, že jsem při objevení univ kvantifikátoru promazala imprecise cache a nyní už QšB vrací korektní výsledek.
+Můj dotaz je proč. Myslela jsem, že underaproximace by se měla týkat pouze exist. kvantifikovaných proměnných. 
+
+A vlastne ani nerozumim, jaky tam je problem.
