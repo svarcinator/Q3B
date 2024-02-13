@@ -19,12 +19,13 @@
 #include <algorithm> 
 
 #include "Model.h"
+#include "Caches.h"
 
 typedef std::pair<std::string, int> var;
 
-enum BoundType { EXISTENTIAL, UNIVERSAL };
-enum ApproximationType { ZERO_EXTEND, SIGN_EXTEND };
-enum Approximation { UNDERAPPROXIMATION, OVERAPPROXIMATION, NO_APPROXIMATION };
+//enum BoundType { EXISTENTIAL, UNIVERSAL };
+//enum ApproximationType { ZERO_EXTEND, SIGN_EXTEND };
+//enum Approximation { UNDERAPPROXIMATION, OVERAPPROXIMATION, NO_APPROXIMATION };
 
 typedef std::pair<std::string, BoundType> boundVar;
 
@@ -45,24 +46,12 @@ class ExprToBDDTransformer
     std::set<var> constSet;
     std::set<var> boundVarSet;
 
-    std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> bddExprCache;
-    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> bvecExprCache;
-
-    // Where is this used? Where are used?
-    std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> preciseBdds;
-    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> preciseBvecs;
-
+    
+    Caches caches;
+    
     int lastBW = 0;
-    std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> sameBWPreciseBdds;
-    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> sameBWPreciseBvecs;
-
-    std::map<const Z3_ast, std::pair<Computation_state , std::vector<boundVar>>> sameBWImpreciseBvecStates;
-
-
-    Approximated<Bvec> insertIntoCaches(const z3::expr&, const Approximated<Bvec>&, const std::vector<boundVar>&);
-    BDDInterval insertIntoCaches(const z3::expr&, const BDDInterval&, const std::vector<boundVar>&, bool);
-    void insertStateIntoCaches(const z3::expr &expr, const Computation_state& , const std::vector<boundVar> &,  const Approximated<Bvec>&, const bool);
-
+    
+    
     
     std::set<Z3_ast> processedVarsCache;
 
@@ -72,7 +61,6 @@ class ExprToBDDTransformer
     void loadVars();
 
     BDDInterval loadBDDsFromExpr(z3::expr);
-    bool correctBoundVars(const std::vector<boundVar>&, const std::vector<boundVar>&) const;
     BDDInterval getBDDFromExpr(const z3::expr&, const std::vector<boundVar>&, bool onlyExistentials, bool isPositive);
     Approximated<Bvec> getApproximatedVariable(const std::string&, int, const ApproximationType&);
     Approximated<Bvec> getBvecFromExpr(const z3::expr&, const std::vector<boundVar>&);
@@ -151,7 +139,6 @@ class ExprToBDDTransformer
 
     Config config;
 
-    void clearCaches();
 
     template< int n >
     void checkNumberOfArguments(const z3::expr& e)
