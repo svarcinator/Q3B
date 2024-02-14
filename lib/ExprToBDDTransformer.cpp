@@ -527,31 +527,13 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
         if (decl_kind == Z3_OP_BADD) {
             if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
                     operationPrecision != 0) {
-                auto item = caches.sameBWImpreciseBvecStates.find((Z3_ast) e);
-                if (item != caches.sameBWImpreciseBvecStates.end() && caches.correctBoundVars(boundVars, (item->second).second)) {
-                    if (DEBUG) {
-                        std::cout << "Found imprecise addition" << e.to_string() << std::endl;
-                    }
-
-                    Computation_state state = caches.sameBWImpreciseBvecStates.at((Z3_ast) e).first; // if reference (not copy), exeption
-                    auto res = bvec_assocOp(
+                auto state = caches.findStateInCaches(e, boundVars);
+                bool createdFreshState = state.IsFresh();
+                auto res = bvec_assocOp(
                             e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
 
-                    caches.insertStateIntoCaches(e, state, boundVars, res, true);
-
-                    return res;
-                }
-                if (e.num_args() == 2) {
-                    Computation_state state = { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };
-                    auto res = bvec_assocOp(
-                            e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-                    caches.insertStateIntoCaches(e, state, boundVars, res, false);
-                    return res;
-                } else {
-                    //assert(false); // preprocessing of the formula should prevent this
-                    return bvec_assocOp(
-                            e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision); }, boundVars);
-                }
+                caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+                return res;
             }
 
             return bvec_assocOp(
@@ -560,25 +542,13 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
             checkNumberOfArguments<2>(e);
             if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
                     operationPrecision != 0) {
-                auto item = caches.sameBWImpreciseBvecStates.find((Z3_ast) e);
-                if (item != caches.sameBWImpreciseBvecStates.end() && caches.correctBoundVars(boundVars, (item->second).second)) {
-                    if (DEBUG) {
-                        std::cout << "Found imprecise substraction" << e.to_string() << std::endl;
-                    }
-
-                    Computation_state state = caches.sameBWImpreciseBvecStates.at((Z3_ast) e).first; // if reference (not copy), exeption
-                    auto res = bvec_assocOp(
+                auto state = caches.findStateInCaches(e, boundVars);
+                bool createdFreshState = state.IsFresh();
+                auto res = bvec_assocOp(
                             e, [&](auto x, auto y) { return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
 
-                    caches.insertStateIntoCaches(e, state, boundVars, res, true);
-
-                    return res;
-                } 
-                Computation_state state = { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };
-                    auto res = bvec_assocOp(
-                            e, [&](auto x, auto y) { return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-                    caches.insertStateIntoCaches(e, state, boundVars, res, false);
-                    return res;
+                caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+                return res;
             }
             return bvec_binOp(
                     e, [](auto x, auto y) { return x - y; }, boundVars);

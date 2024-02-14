@@ -262,7 +262,7 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     
 
     MaybeBDD carry(manager.bddZero());   // carry bit
-    if (state_is_fresh(state)){
+    if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
     } else {
         //state.bitvec MaybeBdd vec already created in previous iterations 
@@ -298,7 +298,7 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     }
 
     MaybeBDD carry(manager.bddZero());   // carry bit
-    if (state_is_fresh(state)){
+    if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
     } else {
         //state.bitvec MaybeBdd vec already created in previous iterations 
@@ -440,11 +440,6 @@ void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int 
 }
 
 
-bool Bvec::state_is_fresh(const Computation_state& state)
-{
-    return state.bitvec.empty();
-}
-
 // @param nodeLimit: maximal number of nodes in one BDD-bit. if UINT_MAX, then no limit
 Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {
@@ -453,7 +448,7 @@ Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigne
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     Bvec res = bvec_false(manager, bitnum);
 
-    if (state_is_fresh(state)) {
+    if (state.IsFresh()) {
         state.bitvec = std::vector<MaybeBDD>(bitnum, MaybeBDD(manager.bddZero()));
     }
 
@@ -583,7 +578,7 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
     Bvec divtmp = right.bvec_coerce(bitnum);
     Bvec div = divtmp.bvec_shlfixed(left.bitnum(), MaybeBDD(manager.bddZero()));
 
-    if (state_is_fresh(state)){
+    if (state.IsFresh()){
         // vector of zero's
         state.bitvec = std::vector<MaybeBDD>(right.bitnum(), MaybeBDD(manager.bddZero()));
     }
@@ -647,7 +642,7 @@ Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec 
         return Bvec(manager);
     }
 
-    if (state_is_fresh(state)) {
+    if (state.IsFresh()) {
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
     }
     // else state already contains bitvec of correct size with least significant bits computed from previous iteration

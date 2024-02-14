@@ -81,7 +81,7 @@ bool Caches::correctBoundVars(const std::vector<boundVar> &boundVars, const std:
     return true;
 }
 
-std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &boundVars) const
+std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars) const
 {
     auto caches = { bvecExprCache, preciseBvecs, sameBWPreciseBvecs };
     for (const auto &cache : caches) {
@@ -93,7 +93,7 @@ std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr
     return {};
 }
 
-std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &boundVars, bool isPositive) const
+std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars, bool isPositive) const
 {
     auto caches = { bddExprCache, preciseBdds, sameBWPreciseBdds };
     for (const auto &cache : caches) {
@@ -107,22 +107,34 @@ std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e,const std
     return {};
 }
 
-void Caches::pruneBvecCache(const std::vector<boundVar>& newBoundVars) {
-    for (auto it = bvecExprCache.begin(); it != bvecExprCache.end();) {
-            if ((it->second).second == newBoundVars) {
-                it = bvecExprCache.erase(it);
-            } else {
-                it++;
-            }
-        }
+Computation_state Caches::findStateInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars) const
+{
+    auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
+    if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
+        return sameBWImpreciseBvecStates.at((Z3_ast) e).first; 
+    }
+    return { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };
+                    
 }
 
-void Caches::pruneBddCache(const std::vector<boundVar>& newBoundVars) {
-    for (auto it = bddExprCache.begin(); it != bddExprCache.end();) {
-            if ((it->second).second == newBoundVars) {
-                it = bddExprCache.erase(it);
-            } else {
-                it++;
-            }
+void Caches::pruneBvecCache(const std::vector<boundVar> &newBoundVars)
+{
+    for (auto it = bvecExprCache.begin(); it != bvecExprCache.end();) {
+        if ((it->second).second == newBoundVars) {
+            it = bvecExprCache.erase(it);
+        } else {
+            it++;
         }
+    }
+}
+
+void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
+{
+    for (auto it = bddExprCache.begin(); it != bddExprCache.end();) {
+        if ((it->second).second == newBoundVars) {
+            it = bddExprCache.erase(it);
+        } else {
+            it++;
+        }
+    }
 }

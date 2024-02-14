@@ -40,9 +40,11 @@ class Caches
     bool correctBoundVars(const std::vector<boundVar> &boundVars, const std::vector<boundVar> &cachedBoundVars) const;
     std::optional<Approximated<cudd::Bvec>> foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &boundVars) const;
     std::optional<BDDInterval> foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &, bool ) const;
+    Computation_state findStateInCaches(const z3::expr &e,const std::vector<boundVar> &) const;
 
     void pruneBvecCache(const std::vector<boundVar>& );
     void pruneBddCache(const std::vector<boundVar>& );
+
 
 
 
