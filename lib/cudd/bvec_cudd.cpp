@@ -619,7 +619,7 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
 Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right)
 {
     Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
-    return bvec_ite_nodeLimit(val, left, right, UINT_MAX, state);
+    return bvec_ite(val, left, right, UINT_MAX, state);
 }
 
 void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state){
@@ -633,7 +633,7 @@ void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, un
         }
 }
 
-Bvec Bvec::bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
+Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {
     // not used anywhere zatim
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);

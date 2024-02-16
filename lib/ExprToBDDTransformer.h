@@ -23,12 +23,8 @@
 
 typedef std::pair<std::string, int> var;
 
-//enum BoundType { EXISTENTIAL, UNIVERSAL };
-//enum ApproximationType { ZERO_EXTEND, SIGN_EXTEND };
-//enum Approximation { UNDERAPPROXIMATION, OVERAPPROXIMATION, NO_APPROXIMATION };
 
 typedef std::pair<std::string, BoundType> boundVar;
-
 
 using namespace cudd;
 
@@ -36,7 +32,6 @@ class ExprToBDDTransformer
 {
   private:
     Cudd bddManager;
-
 
     std::map<std::string, Bvec> vars;
     std::map<std::string, BDD> varSets;
@@ -46,77 +41,78 @@ class ExprToBDDTransformer
     std::set<var> constSet;
     std::set<var> boundVarSet;
 
-    
     Caches caches;
-    
+
     int lastBW = 0;
-    
-    
-    
+
     std::set<Z3_ast> processedVarsCache;
 
-    z3::context* context;
+    z3::context *context;
 
     void getVars(const z3::expr &e);
     void loadVars();
 
     BDDInterval loadBDDsFromExpr(z3::expr);
-    BDDInterval getBDDFromExpr(const z3::expr&, const std::vector<boundVar>&, bool onlyExistentials, bool isPositive);
-    Approximated<Bvec> getApproximatedVariable(const std::string&, int, const ApproximationType&);
-    Approximated<Bvec> getBvecFromExpr(const z3::expr&, const std::vector<boundVar>&);
+    BDDInterval getBDDFromExpr(const z3::expr &, const std::vector<boundVar> &, bool onlyExistentials, bool isPositive);
+    Approximated<Bvec> getApproximatedVariable(const std::string &, int, const ApproximationType &);
+    Approximated<Bvec> getBvecFromExpr(const z3::expr &, const std::vector<boundVar> &);
 
-    unsigned int getNumeralValue(const z3::expr&) const;
-    Bvec getNumeralBvec(const z3::expr&);
-    bool isMinusOne(const Bvec&);
-    uint posToEvaluate(const z3::expr&, const z3::expr&);
-    BDDInterval getImplSubBDD(const uint, const z3::expr&,  const std::vector<boundVar>&, bool onlyExistentials, bool isPositive);
+    unsigned int getNumeralValue(const z3::expr &) const;
+    Bvec getNumeralBvec(const z3::expr &);
+    bool isMinusOne(const Bvec &);
+    uint posToEvaluate(const z3::expr &, const z3::expr &);
+    BDDInterval getImplSubBDD(const uint, const z3::expr &, const std::vector<boundVar> &, bool onlyExistentials, bool isPositive);
 
     template <typename T, typename TorderFunc>
-    void sortVec(std::vector<T>& vec, TorderFunc&& orderExpr);
+    void sortVec(std::vector<T> &vec, TorderFunc &&orderExpr);
 
-    void sortVec(std::vector<BDDInterval>& vec);
+    void sortVec(std::vector<BDDInterval> &vec);
 
-    void sortVec(std::vector<std::pair<z3::expr, unsigned int>>& vec);
+    void sortVec(std::vector<std::pair<z3::expr, unsigned int>> &vec);
 
-    BDDInterval getBdd(unsigned int i, const std::vector<BDDInterval>& bddSubResults,
-                        const std::vector<std::pair<z3::expr, unsigned int>>& exprExpensiveOpsVec,
-                        const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive);
+    BDDInterval getBdd(unsigned int i, const std::vector<BDDInterval> &bddSubResults, const std::vector<std::pair<z3::expr, unsigned int>> &exprExpensiveOpsVec, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive);
 
-
-    template < typename Top,  typename TisDefinite, typename TdefaultResult >
-    BDDInterval getConnectiveBdd(const std::vector<z3::expr>& arguments, const std::vector<boundVar>& boundVars, bool onlyExistentials, bool isPositive,
-                                 Top&& op, TisDefinite&& isDefinite, TdefaultResult&& defaultResult)
+    template <typename Top, typename TisDefinite, typename TdefaultResult>
+    BDDInterval getConnectiveBdd(const std::vector<z3::expr> &arguments, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive, Top &&op, TisDefinite &&isDefinite, TdefaultResult &&defaultResult)
     {
         std::vector<BDDInterval> bddSubResults;
 
-        for (unsigned int i = 0; i < arguments.size(); i++)
-        {
-            if (isInterrupted()) { std::cout<< "interrupted" << std::endl; return defaultResult; }
+        for (unsigned int i = 0; i < arguments.size(); i++) {
+            if (isInterrupted()) {
+                std::cout << "interrupted" << std::endl;
+                return defaultResult;
+            }
             bddSubResults.push_back(getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive));
 
-            if (!bddSubResults.empty() &&  isDefinite(bddSubResults.back())) { return bddSubResults.back();  }
+            if (!bddSubResults.empty() && isDefinite(bddSubResults.back())) {
+                return bddSubResults.back();
+            }
         }
-        
-        if ( bddSubResults.empty()) { return defaultResult; }
-       
-        if (!config.lazyEvaluation)
-        {
+
+        if (bddSubResults.empty()) {
+            return defaultResult;
+        }
+
+        if (!config.lazyEvaluation) {
             sortVec(bddSubResults);
         }
-        
 
-        auto toReturn = defaultResult;  
-        for (auto& argBdd : bddSubResults) {
-            if (isInterrupted()) { return defaultResult; }
+        auto toReturn = defaultResult;
+        for (auto &argBdd : bddSubResults) {
+            if (isInterrupted()) {
+                return defaultResult;
+            }
             toReturn = op(toReturn, argBdd);
-            if (isDefinite(toReturn)) { return toReturn; }   
-        }  
+            if (isDefinite(toReturn)) {
+                return toReturn;
+            }
+        }
 
         return toReturn;
     }
 
-    BDDInterval getConjunctionBdd(const std::vector<z3::expr>&, const std::vector<boundVar>&, bool, bool);
-    BDDInterval getDisjunctionBdd(const std::vector<z3::expr>&, const std::vector<boundVar>&, bool, bool);
+    BDDInterval getConjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
+    BDDInterval getDisjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
 
     Approximation approximation;
     int variableBitWidth;
@@ -130,21 +126,19 @@ class ExprToBDDTransformer
 
     int cacheHits = 0;
 
-    Bvec bvec_mul(Bvec&, Bvec&, Computation_state&, bool);
-    BDDInterval bvec_ule(Bvec&, Bvec&, bool);
-    BDDInterval bvec_ult(Bvec&, Bvec&, bool);
-    Approximated<Bvec> bvec_assocOp(const z3::expr&, const std::function<Bvec(Bvec, Bvec)>&, const std::vector<boundVar>&);
-    Approximated<Bvec> bvec_binOp(const z3::expr&, const std::function<Bvec(Bvec, Bvec)>&, const std::vector<boundVar>&);
-    Approximated<Bvec> bvec_unOp(const z3::expr&, const std::function<Bvec(Bvec)>&, const std::vector<boundVar>&);
+    Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
+    BDDInterval bvec_ule(Bvec &, Bvec &, bool);
+    BDDInterval bvec_ult(Bvec &, Bvec &, bool);
+    Approximated<Bvec> bvec_assocOp(const z3::expr &, const std::function<Bvec(Bvec, Bvec)> &, const std::vector<boundVar> &);
+    Approximated<Bvec> bvec_binOp(const z3::expr &, const std::function<Bvec(Bvec, Bvec)> &, const std::vector<boundVar> &);
+    Approximated<Bvec> bvec_unOp(const z3::expr &, const std::function<Bvec(Bvec)> &, const std::vector<boundVar> &);
 
     Config config;
 
-
-    template< int n >
-    void checkNumberOfArguments(const z3::expr& e)
+    template <int n>
+    void checkNumberOfArguments(const z3::expr &e)
     {
-        if (e.num_args() != n)
-        {
+        if (e.num_args() != n) {
             std::cout << e << " -- unsupported number of arguments" << std::endl;
             std::cout << "unknown" << std::endl;
             exit(1);
@@ -154,7 +148,7 @@ class ExprToBDDTransformer
     bool isInterrupted();
 
   public:
-    ExprToBDDTransformer(z3::context& context, z3::expr e, Config config);
+    ExprToBDDTransformer(z3::context &context, z3::expr e, Config config);
 
     z3::expr expression;
     BDD Proccess();
@@ -184,43 +178,41 @@ class ExprToBDDTransformer
 
     void configureReorder()
     {
-        if (config.reorderType != NO_REORDER)
-        {
-          switch (config.reorderType)
-          {
-              case WIN2:
-                  bddManager.AutodynEnable(CUDD_REORDER_WINDOW2);
-                  break;
-              case WIN2_ITE:
-                  bddManager.AutodynEnable(CUDD_REORDER_WINDOW2_CONV);
-                  break;
-              case WIN3:
-                  bddManager.AutodynEnable(CUDD_REORDER_WINDOW3);
-                  break;
-              case WIN3_ITE:
-                  bddManager.AutodynEnable(CUDD_REORDER_WINDOW3_CONV);
-                  break;
-              case SIFT:
-                  bddManager.SetMaxGrowth(1.05);
-                  bddManager.SetSiftMaxVar(1);
-                  bddManager.AutodynEnable(CUDD_REORDER_SYMM_SIFT);
-                  break;
-              case SIFT_ITE:
-                  bddManager.SetMaxGrowth(1.05);
-                  bddManager.SetSiftMaxVar(1);
-                  bddManager.AutodynEnable(CUDD_REORDER_SYMM_SIFT_CONV);
-                  break;
-              default:
-                  break;
-          }
+        if (config.reorderType != NO_REORDER) {
+            switch (config.reorderType) {
+            case WIN2:
+                bddManager.AutodynEnable(CUDD_REORDER_WINDOW2);
+                break;
+            case WIN2_ITE:
+                bddManager.AutodynEnable(CUDD_REORDER_WINDOW2_CONV);
+                break;
+            case WIN3:
+                bddManager.AutodynEnable(CUDD_REORDER_WINDOW3);
+                break;
+            case WIN3_ITE:
+                bddManager.AutodynEnable(CUDD_REORDER_WINDOW3_CONV);
+                break;
+            case SIFT:
+                bddManager.SetMaxGrowth(1.05);
+                bddManager.SetSiftMaxVar(1);
+                bddManager.AutodynEnable(CUDD_REORDER_SYMM_SIFT);
+                break;
+            case SIFT_ITE:
+                bddManager.SetMaxGrowth(1.05);
+                bddManager.SetSiftMaxVar(1);
+                bddManager.AutodynEnable(CUDD_REORDER_SYMM_SIFT_CONV);
+                break;
+            default:
+                break;
+            }
         }
     }
 
-    void PrintModel(const std::map<std::string, std::vector<bool>>&);
+    void PrintModel(const std::map<std::string, std::vector<bool>> &);
     Model GetModel(BDD);
 
     void PrintNecessaryValues(BDD);
-    void PrintNecessaryVarValues(BDD, const std::string&);
+    void PrintNecessaryVarValues(BDD, const std::string &);
 };
 
 #endif

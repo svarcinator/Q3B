@@ -180,11 +180,13 @@ class Bvec
 
     static void
     ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state &state);
+
+    static Bvec
+    bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
+
     static Bvec
     bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right);
 
-    static Bvec
-    bvec_ite_nodeLimit(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
 
     Bvec
     bvec_shlfixed(unsigned int pos, const MaybeBDD &con) const;
