@@ -1,3 +1,6 @@
+#ifndef Caches_h
+#define Caches_h
+
 
 #include <vector>
 #include <map>
@@ -45,9 +48,5 @@ class Caches
 
     void pruneBvecCache(const std::vector<boundVar>& );
     void pruneBddCache(const std::vector<boundVar>& );
-
-
-
-
-
 };
+#endif

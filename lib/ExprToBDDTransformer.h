@@ -7,19 +7,23 @@
 #include <map>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
+#include <algorithm> 
+
 #include "cudd.h"
 #include <cuddObj.hh>
 #include "cudd/bvec_cudd.h"
 #include <z3++.h>
+
+
+
+#include "Model.h"
+#include "Caches.h"
 #include "VariableOrderer.h"
 #include "Approximated.h"
 #include "Config.h"
 #include "BDDInterval.h"
-#include <iostream>
-#include <algorithm> 
-
-#include "Model.h"
-#include "Caches.h"
+#include "BWChangeEffect.h"
 
 typedef std::pair<std::string, int> var;
 

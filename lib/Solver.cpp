@@ -298,6 +298,7 @@ Result Solver::runUnderApproximation(ExprToBDDTransformer &transformer, int bitW
 
     auto returned = transformer.ProcessUnderapproximation(bitWidth, precision);
     auto result = returned.lower.IsZero() ? UNSAT : SAT;
+    //transformer.PrintModel();
 
     if (result == SAT && !resultComputed) {
         Logger::Log("Solver", "Decided by underapproximation", 1);

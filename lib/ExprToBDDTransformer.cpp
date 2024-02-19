@@ -1,13 +1,14 @@
-#include "ExprToBDDTransformer.h"
+#include <algorithm>
+#include <cmath>
+#include <list>
+#include <sstream>
 
 #include "ExpensiveOp.h"
 #include "HexHelper.h"
 #include "Solver.h"
 
-#include <algorithm>
-#include <cmath>
-#include <list>
-#include <sstream>
+#include "ExprToBDDTransformer.h"
+
 
 #define DEBUG false
 
@@ -28,6 +29,8 @@ ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config 
     loadVars();
 
     setApproximationType(SIGN_EXTEND);  // why? -- under and over appr set appr type themselves, no appr does not need it
+    //auto bwChange = BWChangeEffect();
+    //bwChange.ExprWalk(e);
 }
 
 void ExprToBDDTransformer::getVars(const z3::expr &e)
