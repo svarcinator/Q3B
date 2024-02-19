@@ -21,11 +21,11 @@ BDDInterval Caches::insertIntoCaches(const z3::expr &expr, const BDDInterval &bd
     return bdd;
 }
 
-void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state &state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool expr_already_in_map)
+void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state &state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool newState)
 {
     //std::cout << "insertStateIntoCaches " << expr.to_string() << " state: " << state.to_string() << "  already in map? " << expr_already_in_map << std::endl;;
     if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0) {
-        if (expr_already_in_map) {
+        if (!newState) {
             sameBWImpreciseBvecStates[expr] = { state, boundVars };
             return;
         }
@@ -33,7 +33,7 @@ void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state
         //std::cout << "Expr " << expr.to_string() << " inserted" << std::endl;
     }
     // if precise and in sameBWImpreciseBvecStates -> remove
-    if (expr_already_in_map && bvec.value.isPrecise()) {
+    if (!newState && bvec.value.isPrecise()) {
         sameBWImpreciseBvecStates.erase(expr);
     }
 }

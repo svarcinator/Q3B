@@ -27,7 +27,7 @@ ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config 
 
     loadVars();
 
-    setApproximationType(SIGN_EXTEND);
+    setApproximationType(SIGN_EXTEND);  // why? -- under and over appr set appr type themselves, no appr does not need it
 }
 
 void ExprToBDDTransformer::getVars(const z3::expr &e)
@@ -405,6 +405,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
                 auto oldsameBWImpreciseBvecStates = caches.sameBWImpreciseBvecStates;
                 caches.sameBWImpreciseBvecStates.clear();
                 bodyBdd = getBDDFromExpr(e.body(), newBoundVars, false, isPositive);
+                // TODO findout what is wrong here
                 caches.sameBWImpreciseBvecStates = oldsameBWImpreciseBvecStates;
             } else {
                 //only existentials so far and this one is also existential
