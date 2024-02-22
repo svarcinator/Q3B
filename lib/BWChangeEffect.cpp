@@ -1,36 +1,45 @@
 #include "BWChangeEffect.h"
+
+#include "IntervalTester.cpp"
+#include "Solver.h"
+
 #include <iostream>
+#include <mutex>
+
+using namespace z3;
 
 
-//@pre: e.is_var() || e.is_const()
-void BWChangeEffect::EffectOnVar(const z3::expr &e)
+
+
+
+// only if aproximated
+// oldBW  = newBW - 2;
+std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount) const
 {
-
+    assert(newBW != 0 && newBW % 2 == 0);
+    // seems like there is always only middle extension applied
+    int left_index = bitCount - (newBW / 2); // bitcount - (newitWidth / 2) - 1 is the first index tht is set to 0
+    int right_index = newBW - (newBW / 2) - 1;
+    return { { left_index, left_index }, { right_index, right_index } };
 }
 
-void BWChangeEffect::ExprWalk(const z3::expr &e)
+// tests interval on the input on basic properties
+void BWChangeEffect::AreIntervalsCorrect(const std::vector<Interval> &intervals) 
 {
-    if (e.is_var() || e.is_const()) {
-        // what to do for var
-
-    } else if (e.is_quantifier()) {
-        ExprWalk(e.body());
-
-    } else if (e.is_app()) {
-        for (int i = 0; i < e.num_args(); ++i) {
-            {
-                ExprWalk(e.arg(i));
-                std::cout << "Arg = " << e.arg(i).to_string() << std::endl;
-            }
-        }
-        if (e.is_bool())
-            return;
-
-        z3::func_decl f = e.decl();
-        auto decl_kind = f.decl_kind();
-        std::cout << "Decl kind = " << decl_kind << std::endl;
-
-    } else {
-        std::cout << "else" << std::endl;
-    }
+    testIntervals(intervals);
 }
+
+int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &rightChange) const {
+    return std::min(leftChange.second, rightChange.second);
+}
+
+std::vector<Interval> BWChangeEffect::EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) const
+{
+    // Recompute everything (to left) from the rightmost changed bit.
+    // Because of carry bit
+
+    auto rightmostChangedBit = getRightmostBit(leftChange.back(), rightChange.back());
+    return {{INTMAX_MAX,rightmostChangedBit }};    // unbounded interval on left -- means from right to the left end of bitvector
+}
+
+

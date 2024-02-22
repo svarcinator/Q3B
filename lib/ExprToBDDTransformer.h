@@ -61,9 +61,7 @@ class ExprToBDDTransformer
     Approximated<Bvec> getApproximatedVariable(const std::string &, int, const ApproximationType &);
     Approximated<Bvec> getBvecFromExpr(const z3::expr &, const std::vector<boundVar> &);
 
-    unsigned int getNumeralValue(const z3::expr &) const;
-    Bvec getNumeralBvec(const z3::expr &);
-    bool isMinusOne(const Bvec &);
+    
     uint posToEvaluate(const z3::expr &, const z3::expr &);
     BDDInterval getImplSubBDD(const uint, const z3::expr &, const std::vector<boundVar> &, bool onlyExistentials, bool isPositive);
 
@@ -73,8 +71,6 @@ class ExprToBDDTransformer
     void sortVec(std::vector<BDDInterval> &vec);
 
     void sortVec(std::vector<std::pair<z3::expr, unsigned int>> &vec);
-
-    BDDInterval getBdd(unsigned int i, const std::vector<BDDInterval> &bddSubResults, const std::vector<std::pair<z3::expr, unsigned int>> &exprExpensiveOpsVec, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive);
 
     template <typename Top, typename TisDefinite, typename TdefaultResult>
     BDDInterval getConnectiveBdd(const std::vector<z3::expr> &arguments, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive, Top &&op, TisDefinite &&isDefinite, TdefaultResult &&defaultResult)
@@ -118,6 +114,31 @@ class ExprToBDDTransformer
     BDDInterval getConjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
     BDDInterval getDisjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
 
+
+    // Get Bvecs functions
+    // Functions called in ExprToBDDTransformer::getBvecFromExpr 
+    Approximated<Bvec> getVar(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getConst(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getAddition(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getSubstraction(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getConcat(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getExtract(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getMul(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getDivOrRem(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getSignedDivRem(const z3::expr &e, const std::vector<boundVar> &boundVars, z3::expr (*op)( const z3::expr &e1, const z3::expr &e2));
+    Approximated<Bvec> getIte(const z3::expr &e, const std::vector<boundVar> &);
+    
+    // helper funcs
+
+    Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
+    bool areOpsApproximated() const;
+    bool shouldApproximateVar(const boundVar& bVar) const;
+    unsigned int getNumeralValue(const z3::expr &) const;
+    Bvec getNumeralBvec(const z3::expr &);
+    bool isMinusOne(const Bvec &);
+
+
+    std::vector<boundVar> getNewBounds(const z3::expr &e, const std::vector<boundVar> &boundVars);
     Approximation approximation;
     int variableBitWidth;
 
@@ -130,7 +151,6 @@ class ExprToBDDTransformer
 
     int cacheHits = 0;
 
-    Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
     BDDInterval bvec_ule(Bvec &, Bvec &, bool);
     BDDInterval bvec_ult(Bvec &, Bvec &, bool);
     Approximated<Bvec> bvec_assocOp(const z3::expr &, const std::function<Bvec(Bvec, Bvec)> &, const std::vector<boundVar> &);

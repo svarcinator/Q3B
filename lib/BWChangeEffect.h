@@ -10,21 +10,33 @@
 
 
 typedef std::pair<int, int> Interval;
+typedef std::pair<std::string, int> var;
+
 
 class BWChangeEffect
 {
   private:
-    /* data */
-
+    
     
   public:
-    std::map<z3::expr, std::vector<Interval>> AffectedIndices;
-    // function f: int -> std::vector<Interval>> -- for current BW return intervals of affected bits
-    std::map< z3::expr, std::function<std::vector<Interval>>(int)> AffectedIndicesFunc;
 
-    void ExprWalk(const z3::expr &e);
-    void EffectOnVar(const z3::expr &e);
-    
+    void EffectOnVar(const z3::expr &e, const std::vector<boundVar> &boundVars);
+    std::vector<Interval> EffectOnVar(int, uint) const;
+    static  
+    void AreIntervalsCorrect(const std::vector<Interval> &intervals);
+    bool 
+    isVarAffected(const z3::expr &e, const std::vector<boundVar> &boundVars);
+
+    int getRightmostBit(const Interval &leftChange, const Interval &rightChange) const;
+    std::vector<Interval> EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) const;
+
 };
 #endif
 
+// asi si tu znova naimplementuju cely svuj novy expr walk, ale nejspise by to pak chtelo nejaky poradnejsi refactoring, tak aby to nebylo vsude porad dokola
+// stalo by za to si rozmyslet, jestli by to pak neslo nejak genericteji uvnitr preprocessingu (protoze precejenom by to melo byt furt podobne
+// a to ze aff bits budou posledni dva (tzn na indexu BW -1 a BW -2), z toho se pak ovlivni vys a vys)
+
+// a potom bychom pro kazdy expr vytvorili fci, co by brala na vstup currentBW a vracela vector IndexIntervalů
+// mozna to bude lepsi udelat v konstruktoru transformeru, jelikoz tam uz jsou vytvorene promenne a vime jak jsou kvantifikovane
+// dunno

@@ -1,14 +1,13 @@
-#include <algorithm>
-#include <cmath>
-#include <list>
-#include <sstream>
+#include "ExprToBDDTransformer.h"
 
 #include "ExpensiveOp.h"
 #include "HexHelper.h"
 #include "Solver.h"
 
-#include "ExprToBDDTransformer.h"
-
+#include <algorithm>
+#include <cmath>
+#include <list>
+#include <sstream>
 
 #define DEBUG false
 
@@ -18,8 +17,6 @@ using namespace std;
 using namespace z3;
 using namespace std::placeholders;
 
-
-
 ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config config)
     : config(config), expression(e)
 {
@@ -28,9 +25,7 @@ ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config 
 
     loadVars();
 
-    setApproximationType(SIGN_EXTEND);  // why? -- under and over appr set appr type themselves, no appr does not need it
-    //auto bwChange = BWChangeEffect();
-    //bwChange.ExprWalk(e);
+    setApproximationType(SIGN_EXTEND); // why? -- under and over appr set appr type themselves, no appr does not need it
 }
 
 void ExprToBDDTransformer::getVars(const z3::expr &e)
@@ -386,24 +381,11 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             exit(1);
         }
     } else if (e.is_quantifier()) {
-        Z3_ast ast = (Z3_ast) e;
-
-        int boundVariables = Z3_get_quantifier_num_bound(*context, ast);
-
-        auto newBoundVars = boundVars;
-        for (int i = 0; i < boundVariables; i++) {
-            Z3_symbol z3_symbol = Z3_get_quantifier_bound_name(*context, ast, i);
-            symbol current_symbol(*context, z3_symbol);
-
-            BoundType bt = Z3_is_quantifier_forall(*context, ast) ? UNIVERSAL : EXISTENTIAL;
-
-            std::unique_lock<std::mutex> lk(Solver::m_z3context);
-            newBoundVars.push_back(std::pair<string, BoundType>(current_symbol.str(), bt));
-        }
-
+        auto newBoundVars = getNewBounds(e, boundVars);
+        int boundVariables = Z3_get_quantifier_num_bound(*context, (Z3_ast) e);
         BDDInterval bodyBdd;
         if (onlyExistentials) {
-            if (Z3_is_quantifier_forall(*context, ast)) {
+            if (Z3_is_quantifier_forall(*context, (Z3_ast) e)) {
                 //only existentials so far, but this one is universal
                 auto oldsameBWImpreciseBvecStates = caches.sameBWImpreciseBvecStates;
                 caches.sameBWImpreciseBvecStates.clear();
@@ -431,13 +413,13 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
         caches.pruneBvecCache(newBoundVars);
 
         for (int i = boundVariables - 1; i >= 0; i--) {
-            Z3_symbol z3_symbol = Z3_get_quantifier_bound_name(*context, ast, i);
+            Z3_symbol z3_symbol = Z3_get_quantifier_bound_name(*context, (Z3_ast) e, i);
             symbol current_symbol(*context, z3_symbol);
 
             Solver::m_z3context.lock();
             auto varSet = varSets.at(current_symbol.str());
             Solver::m_z3context.unlock();
-            if (Z3_is_quantifier_forall(*context, ast)) {
+            if (Z3_is_quantifier_forall(*context, (Z3_ast) e)) {
                 bodyBdd = bodyBdd.UnivAbstract(varSet);
             } else {
                 bodyBdd = bodyBdd.ExistAbstract(varSet);
@@ -449,6 +431,24 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
 
     cout << "bdd else: " << e << endl;
     abort();
+}
+std::vector<boundVar> ExprToBDDTransformer::getNewBounds(const z3::expr &e, const std::vector<boundVar> &boundVars)
+{
+    Z3_ast ast = (Z3_ast) e;
+
+    int boundVariables = Z3_get_quantifier_num_bound(*context, ast);
+
+    auto newBoundVars = boundVars;
+    for (int i = 0; i < boundVariables; i++) {
+        Z3_symbol z3_symbol = Z3_get_quantifier_bound_name(*context, ast, i);
+        symbol current_symbol(*context, z3_symbol);
+
+        BoundType bt = Z3_is_quantifier_forall(*context, ast) ? UNIVERSAL : EXISTENTIAL;
+
+        std::unique_lock<std::mutex> lk(Solver::m_z3context);
+        newBoundVars.push_back(std::pair<std::string, BoundType>(current_symbol.str(), bt));
+    }
+    return newBoundVars;
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::string &varName, int newBitWidth, const ApproximationType &at)
@@ -480,6 +480,7 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
             var.set(i, var[i - 1]);
         }
     } else if (at == SIGN_EXTEND && rightBits == 0) {
+        // when does this happen if newBitWidth is always even non zero number?
         for (int i = var.bitnum() - leftBits - 1; i >= 0; i--) {
             var.set(i, var[i + 1]);
         }
@@ -498,64 +499,20 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
     }
 
     if (e.is_var()) {
-        Z3_ast ast = (Z3_ast) e;
-        int deBruijnIndex = Z3_get_index_value(*context, ast);
-        boundVar bVar = boundVars[boundVars.size() - deBruijnIndex - 1];
+        return getVar(e, boundVars);
 
-        if ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) &&
-                ((bVar.second == EXISTENTIAL && approximation == UNDERAPPROXIMATION) ||
-                        (bVar.second == UNIVERSAL && approximation == OVERAPPROXIMATION))) {
-            return getApproximatedVariable(bVar.first, variableBitWidth, approximationType);
-        }
-
-        return caches.insertIntoCaches(e, { vars.at(bVar.first), PRECISE }, boundVars);
     } else if (e.is_numeral()) {
         return caches.insertIntoCaches(e, { getNumeralBvec(e), PRECISE }, boundVars);
     } else if (e.is_const()) {
-        Bvec result(bddManager);
-
-        if ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) && approximation == UNDERAPPROXIMATION) {
-            std::unique_lock<std::mutex> lk(Solver::m_z3context);
-            auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
-            return caches.insertIntoCaches(e, result, boundVars);
-        }
-
-        std::unique_lock<std::mutex> lk(Solver::m_z3context);
-        return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
+        return getConst(e, boundVars);
     } else if (e.is_app()) {
         func_decl f = e.decl();
-        unsigned num = e.num_args();
-
         auto decl_kind = f.decl_kind();
 
         if (decl_kind == Z3_OP_BADD) {
-            if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
-                    operationPrecision != 0) {
-                auto state = caches.findStateInCaches(e, boundVars);
-                bool createdFreshState = state.IsFresh();
-                auto res = bvec_assocOp(
-                        e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-
-                caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-                return res;
-            }
-
-            return bvec_assocOp(
-                    e, [&](auto x, auto y) { return x + y; }, boundVars);
+            return getAddition(e, boundVars);
         } else if (decl_kind == Z3_OP_BSUB) {
-            checkNumberOfArguments<2>(e);
-            if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
-                    operationPrecision != 0) {
-                auto state = caches.findStateInCaches(e, boundVars);
-                bool createdFreshState = state.IsFresh();
-                auto res = bvec_assocOp(
-                        e, [&](auto x, auto y) { return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-
-                caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-                return res;
-            }
-            return bvec_binOp(
-                    e, [](auto x, auto y) { return x - y; }, boundVars);
+            return getSubstraction(e, boundVars);
         } else if (decl_kind == Z3_OP_BSHL) {
             if (e.arg(1).is_numeral()) {
                 return bvec_unOp(
@@ -582,39 +539,10 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
                         e, [&](auto x, auto y) { return Bvec::bvec_shr(x, y, x[bitwidth - 1]); }, boundVars);
             }
         } else if (decl_kind == Z3_OP_CONCAT) {
-            int newSize = f.range().bv_size();
-            int offset = 0;
-
-            auto currentBvec = Bvec::bvec_false(bddManager, newSize);
-            Precision opPrecision = PRECISE;
-            Precision varPrecision = PRECISE;
-
-            assert(num > 0);
-            for (int i = num - 1; i >= 0; i--) {
-                auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);
-                currentBvec = Bvec::bvec_map2(currentBvec,
-                        arg.bvec_coerce(newSize) << offset,
-                        [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; });
-                opPrecision = opPrecision && argOpPrecision;
-                varPrecision = varPrecision && argVarPrecision;
-                offset += f.domain(i).bv_size();
-            }
-
-            return caches.insertIntoCaches(e, { currentBvec, opPrecision, varPrecision }, boundVars);
+            return getConcat(e, boundVars);
         } else if (decl_kind == Z3_OP_EXTRACT) {
-            Z3_func_decl z3decl = (Z3_func_decl) e.decl();
+            return getExtract(e, boundVars);
 
-            int bitTo = Z3_get_decl_int_parameter(*context, z3decl, 0);
-            int bitFrom = Z3_get_decl_int_parameter(*context, z3decl, 1);
-
-            int extractBits = bitTo - bitFrom + 1;
-
-            return bvec_unOp(
-                    e,
-                    [&](auto x) { return x
-                                          .bvec_shrfixed(bitFrom, MaybeBDD(bddManager.bddZero()))
-                                          .bvec_coerce(extractBits); },
-                    boundVars);
         } else if (decl_kind == Z3_OP_BNOT) {
             return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);
         } else if (decl_kind == Z3_OP_BNEG) {
@@ -630,138 +558,17 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
             return bvec_assocOp(
                     e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);
         } else if (decl_kind == Z3_OP_BMUL) {
-            assert(e.num_args() == 2);
-            //checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
-
-            auto state = caches.findStateInCaches(e, boundVars);
-            bool createdFreshState = state.IsFresh();
-            auto res = bvec_assocOp(
-                    e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
-            caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-            return res;
-
+            return getMul(e, boundVars);
         } else if (decl_kind == Z3_OP_BUREM || decl_kind == Z3_OP_BUREM_I || decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) {
             // I at the end is operation that assumes that second operand is non-zero
-            checkNumberOfArguments<2>(e);
-
-            Bvec div = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
-            Bvec rem = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
-
-            auto [arg0, arg0OpPrecision, arg0VarPrecision] = getBvecFromExpr(e.arg(0), boundVars);
-            auto [arg1, arg1OpPrecision, arg1VarPrecision] = getBvecFromExpr(e.arg(1), boundVars);
-
-            Precision opPrecision = arg0OpPrecision && arg1OpPrecision;
-            Precision varPrecision = arg0VarPrecision && arg1VarPrecision;
-
-            int result = 0;
-            if (e.arg(1).is_numeral() && e.get_sort().bv_size() <= 32) {
-                result = arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
-            } else if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
-                    operationPrecision != 0) {
-                auto state = caches.findStateInCaches(e, boundVars);
-                bool createdFreshState = state.IsFresh();
-                result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
-                if (result == 0) {
-                    caches.insertStateIntoCaches(e, state, boundVars, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, createdFreshState);
-                }
-            } else {
-                result = arg0.bvec_div(arg0, arg1, div, rem);
-            }
-
-            if (result == 0) {
-                return caches.insertIntoCaches(e, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, boundVars);
-            } else {
-                cout << "ERROR: division error" << endl;
-                cout << "unknown";
-                exit(0);
-            }
+            return getDivOrRem(e, boundVars);
         } else if (decl_kind == Z3_OP_BSDIV || decl_kind == Z3_OP_BSDIV_I) {
-            // WHAT  (study this)
-            checkNumberOfArguments<2>(e);
+            return getSignedDivRem(e, boundVars, udiv);
 
-            expr arg0 = e.arg(0);
-            expr arg1 = e.arg(1);
-
-            expr zero = context->bv_val(0, 1);
-            expr one = context->bv_val(1, 1);
-
-            int size = e.arg(0).get_sort().bv_size();
-            expr msb_s = arg0.extract(size - 1, size - 1);
-            expr msb_t = arg1.extract(size - 1, size - 1);
-
-            expr e = ite(msb_s == zero && msb_t == zero,
-                    udiv(arg0, arg1),
-                    ite(msb_s == one && msb_t == zero,
-                            -udiv(-arg0, arg1),
-                            ite(msb_s == zero && msb_t == one,
-                                    -udiv(arg0, -arg1),
-                                    udiv(-arg0, -arg1))));
-
-            caches.clearCaches();
-
-            auto result = getBvecFromExpr(e, boundVars);
-            return caches.insertIntoCaches(e, result, boundVars);
         } else if (decl_kind == Z3_OP_BSREM || decl_kind == Z3_OP_BSREM_I) {
-            checkNumberOfArguments<2>(e);
-
-            expr arg0 = e.arg(0);
-            expr arg1 = e.arg(1);
-
-            expr zero = context->bv_val(0, 1);
-            expr one = context->bv_val(1, 1);
-
-            int size = e.arg(0).get_sort().bv_size();
-            expr msb_s = arg0.extract(size - 1, size - 1);
-            expr msb_t = arg1.extract(size - 1, size - 1);
-
-            expr e = ite(msb_s == zero && msb_t == zero,
-                    urem(arg0, arg1),
-                    ite(msb_s == one && msb_t == zero,
-                            -urem(-arg0, arg1),
-                            ite(msb_s == zero && msb_t == one,
-                                    urem(arg0, -arg1),
-                                    -urem(-arg0, -arg1))));
-            caches.clearCaches();
-
-            auto result = getBvecFromExpr(e, boundVars);
-            return caches.insertIntoCaches(e, result, boundVars);
+            return getSignedDivRem(e, boundVars, urem);
         } else if (decl_kind == Z3_OP_ITE) {
-            checkNumberOfArguments<3>(e);
-
-            //TODO: Tohle může být nekorektní kvůli isPositive!!!
-            auto arg0 = getBDDFromExpr(e.arg(0), boundVars, false, true);
-            if (arg0.upper != arg0.lower) {
-                auto unknown = Bvec{ bddManager,
-                    e.get_sort().bv_size(),
-                    MaybeBDD{} };
-                return caches.insertIntoCaches(e, { unknown, APPROXIMATED, APPROXIMATED }, boundVars);
-            }
-
-            Bvec result(bddManager);
-
-            if (config.lazyEvaluation && arg0.lower.IsOne()) {
-                result = getBvecFromExpr(e.arg(1), boundVars).value;
-            } else if (config.lazyEvaluation && arg0.upper.IsZero()) {
-                result = getBvecFromExpr(e.arg(2), boundVars).value;
-            } else {
-                auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
-                auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
-                auto maybeArg0 = MaybeBDD(arg0.upper);
-
-                if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
-                        operationPrecision != 0) {
-                    auto state = caches.findStateInCaches(e, boundVars);
-                    bool createdFreshState = state.IsFresh();
-                    result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
-                    caches.insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, createdFreshState);
-                } else {
-                    result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
-                            arg1,
-                            arg2);
-                }
-            }
-
-            return caches.insertIntoCaches(e, { result, APPROXIMATED, APPROXIMATED }, boundVars);
+            return getIte(e, boundVars);
         } else {
             cout << "ERROR: not supported function " << e << endl;
             cout << "unknown";
@@ -843,6 +650,74 @@ BDDInterval ExprToBDDTransformer::ProcessOverapproximation(int bitWidth, unsigne
     return loadBDDsFromExpr(expression);
 }
 
+BDDInterval ExprToBDDTransformer::bvec_ule(Bvec &arg0, Bvec &arg1, bool isPositive)
+{
+    if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
+        auto over = Bvec::bvec_lte_overApprox(arg0, arg1);
+        auto under = Bvec::bvec_lte_underApprox(arg0, arg1) |
+                Bvec::bvec_equ_underApprox(arg0, Bvec::bvec_false(bddManager, arg0.bitnum())) |
+                Bvec::bvec_equ_underApprox(arg1, Bvec::bvec_true(bddManager, arg1.bitnum()));
+
+        return isPositive ? BDDInterval(over, under) : BDDInterval(under, over);
+    }
+
+    return BDDInterval{ Bvec::bvec_lte(arg0, arg1).GetBDD(bddManager.bddZero()) };
+    ;
+}
+
+BDDInterval ExprToBDDTransformer::bvec_ult(Bvec &arg0, Bvec &arg1, bool isPositive)
+{
+    BDDInterval result;
+
+    if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
+        auto over = Bvec::bvec_lth_overApprox(arg0, arg1) &
+                Bvec::bvec_nequ_overApprox(arg0, Bvec::bvec_true(bddManager, arg0.bitnum())) &
+                Bvec::bvec_nequ_overApprox(arg1, Bvec::bvec_false(bddManager, arg1.bitnum()));
+        auto under = Bvec::bvec_lth_underApprox(arg0, arg1);
+
+        return isPositive ? BDDInterval(over, under) : BDDInterval(under, over);
+    }
+
+    return BDDInterval{ Bvec::bvec_lth(arg0, arg1).GetBDD(bddManager.bddZero()) };
+}
+
+// @pre: e.num_args() > 0
+// @pre: op is associative
+Approximated<Bvec> ExprToBDDTransformer::bvec_assocOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
+{
+    unsigned num = e.num_args();
+    auto toReturn = getBvecFromExpr(e.arg(0), boundVars);
+    for (unsigned int i = 1; i < num; i++) {
+        toReturn = toReturn.Apply2<Bvec>(getBvecFromExpr(e.arg(i), boundVars), op);
+    }
+
+    return caches.insertIntoCaches(e, toReturn, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::bvec_binOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
+{
+    auto result = getBvecFromExpr(e.arg(0), boundVars).Apply2<Bvec>(getBvecFromExpr(e.arg(1), boundVars), op);
+
+    return caches.insertIntoCaches(e, result, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::bvec_unOp(const z3::expr &e, const std::function<Bvec(Bvec)> &op, const std::vector<boundVar> &boundVars)
+{
+    auto result = getBvecFromExpr(e.arg(0), boundVars).Apply<Bvec>(op);
+
+    return caches.insertIntoCaches(e, result, boundVars);
+}
+
+bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
+{
+    return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.begin(), [](auto &bit) { return bit.IsOne(); });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////// GET BVECS FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////  Help Functions ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &state)
 {
     unsigned int bitNum = arg0.bitnum();
@@ -905,62 +780,271 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
     return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);
 }
 
-BDDInterval ExprToBDDTransformer::bvec_ule(Bvec &arg0, Bvec &arg1, bool isPositive)
+bool ExprToBDDTransformer::areOpsApproximated() const
 {
-    if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
-        auto over = Bvec::bvec_lte_overApprox(arg0, arg1);
-        auto under = Bvec::bvec_lte_underApprox(arg0, arg1) |
-                Bvec::bvec_equ_underApprox(arg0, Bvec::bvec_false(bddManager, arg0.bitnum())) |
-                Bvec::bvec_equ_underApprox(arg1, Bvec::bvec_true(bddManager, arg1.bitnum()));
-
-        return isPositive ? BDDInterval(over, under) : BDDInterval(under, over);
-    }
-
-    return BDDInterval{ Bvec::bvec_lte(arg0, arg1).GetBDD(bddManager.bddZero()) };
-    ;
+    return (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
+            operationPrecision != 0;
 }
 
-BDDInterval ExprToBDDTransformer::bvec_ult(Bvec &arg0, Bvec &arg1, bool isPositive)
+bool ExprToBDDTransformer::shouldApproximateVar(const boundVar &bVar) const
 {
-    BDDInterval result;
-
-    if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
-        auto over = Bvec::bvec_lth_overApprox(arg0, arg1) &
-                Bvec::bvec_nequ_overApprox(arg0, Bvec::bvec_true(bddManager, arg0.bitnum())) &
-                Bvec::bvec_nequ_overApprox(arg1, Bvec::bvec_false(bddManager, arg1.bitnum()));
-        auto under = Bvec::bvec_lth_underApprox(arg0, arg1);
-
-        return isPositive ? BDDInterval(over, under) : BDDInterval(under, over);
-    }
-
-    return BDDInterval{ Bvec::bvec_lth(arg0, arg1).GetBDD(bddManager.bddZero()) };
+    return ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) &&
+            ((bVar.second == EXISTENTIAL && approximation == UNDERAPPROXIMATION) ||
+                    (bVar.second == UNIVERSAL && approximation == OVERAPPROXIMATION)));
 }
 
-// @pre: e.num_args() > 0
-// @pre: op is associative
-Approximated<Bvec> ExprToBDDTransformer::bvec_assocOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
+///////////////////////////  Functions called in ExprToBDDTransformer::getBvecFromExpr /////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boundVar> &boundVars)
 {
+    Z3_ast ast = (Z3_ast) e;
+    int deBruijnIndex = Z3_get_index_value(*context, ast);
+    boundVar bVar = boundVars[boundVars.size() - deBruijnIndex - 1];
+
+    if (shouldApproximateVar(bVar)) {
+        return getApproximatedVariable(bVar.first, variableBitWidth, approximationType);
+    }
+
+    return caches.insertIntoCaches(e, { vars.at(bVar.first), PRECISE }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<boundVar> &boundVars)
+{
+    Bvec result(bddManager);
+    if ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) && approximation == UNDERAPPROXIMATION) {
+        std::unique_lock<std::mutex> lk(Solver::m_z3context);
+        auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
+        return caches.insertIntoCaches(e, result, boundVars);
+    }
+
+    std::unique_lock<std::mutex> lk(Solver::m_z3context);
+    return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector<boundVar> &boundVars)
+{
+    if (areOpsApproximated()) {
+        auto state = caches.findStateInCaches(e, boundVars);
+        bool createdFreshState = state.IsFresh();
+        auto res = bvec_assocOp(
+                e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
+
+        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+        return res;
+    }
+
+    return bvec_assocOp(
+            e, [&](auto x, auto y) { return x + y; }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const vector<boundVar> &boundVars)
+{
+    checkNumberOfArguments<2>(e);
+    if (areOpsApproximated()) {
+        auto state = caches.findStateInCaches(e, boundVars);
+        bool createdFreshState = state.IsFresh();
+        auto res = bvec_assocOp(
+                e, [&](auto x, auto y) { return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
+
+        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+        return res;
+    }
+    return bvec_binOp(
+            e, [](auto x, auto y) { return x - y; }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<boundVar> &boundVars)
+{
+    func_decl f = e.decl();
     unsigned num = e.num_args();
-    auto toReturn = getBvecFromExpr(e.arg(0), boundVars);
-    for (unsigned int i = 1; i < num; i++) {
-        toReturn = toReturn.Apply2<Bvec>(getBvecFromExpr(e.arg(i), boundVars), op);
+    int newSize = f.range().bv_size();
+    int offset = 0;
+
+    auto currentBvec = Bvec::bvec_false(bddManager, newSize);
+    Precision opPrecision = PRECISE;
+    Precision varPrecision = PRECISE;
+
+    assert(num > 0);
+    for (int i = num - 1; i >= 0; i--) {
+        auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);
+        currentBvec = Bvec::bvec_map2(currentBvec,
+                arg.bvec_coerce(newSize) << offset,
+                [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; });
+        opPrecision = opPrecision && argOpPrecision;
+        varPrecision = varPrecision && argVarPrecision;
+        offset += f.domain(i).bv_size();
+    }
+    return caches.insertIntoCaches(e, { currentBvec, opPrecision, varPrecision }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getExtract(const expr &e, const vector<boundVar> &boundVars)
+{
+    Z3_func_decl z3decl = (Z3_func_decl) e.decl();
+    int bitTo = Z3_get_decl_int_parameter(*context, z3decl, 0);
+    int bitFrom = Z3_get_decl_int_parameter(*context, z3decl, 1);
+    int extractBits = bitTo - bitFrom + 1;
+    return bvec_unOp(
+            e,
+            [&](auto x) { return x
+                                  .bvec_shrfixed(bitFrom, MaybeBDD(bddManager.bddZero()))
+                                  .bvec_coerce(extractBits); },
+            boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boundVar> &boundVars)
+{
+    assert(e.num_args() == 2);
+    //checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
+    auto state = caches.findStateInCaches(e, boundVars);
+    bool createdFreshState = state.IsFresh();
+    auto res = bvec_assocOp(
+            e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
+    caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+    return res;
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getDivOrRem(const expr &e, const vector<boundVar> &boundVars)
+{
+    checkNumberOfArguments<2>(e);
+    func_decl f = e.decl();
+    auto decl_kind = f.decl_kind();
+
+    Bvec div = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
+    Bvec rem = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
+
+    auto [arg0, arg0OpPrecision, arg0VarPrecision] = getBvecFromExpr(e.arg(0), boundVars);
+    auto [arg1, arg1OpPrecision, arg1VarPrecision] = getBvecFromExpr(e.arg(1), boundVars);
+
+    Precision opPrecision = arg0OpPrecision && arg1OpPrecision;
+    Precision varPrecision = arg0VarPrecision && arg1VarPrecision;
+
+    int result = 0;
+    if (e.arg(1).is_numeral() && e.get_sort().bv_size() <= 32) {
+        result = arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
+    } else if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
+            operationPrecision != 0) {
+        auto state = caches.findStateInCaches(e, boundVars);
+        bool createdFreshState = state.IsFresh();
+        result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
+        if (result == 0) {
+            caches.insertStateIntoCaches(e, state, boundVars, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, createdFreshState);
+        }
+    } else {
+        result = arg0.bvec_div(arg0, arg1, div, rem);
     }
 
-    return caches.insertIntoCaches(e, toReturn, boundVars);
+    if (result == 0) {
+        return caches.insertIntoCaches(e, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, boundVars);
+    } else {
+        cout << "ERROR: division error" << endl;
+        cout << "unknown";
+        exit(0);
+    }
 }
 
-Approximated<Bvec> ExprToBDDTransformer::bvec_binOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
+Approximated<Bvec> ExprToBDDTransformer::getSignedDivRem(const expr &e, const vector<boundVar> &boundVars, expr (*op)(const expr &e1, const expr &e2))
 {
-    auto result = getBvecFromExpr(e.arg(0), boundVars).Apply2<Bvec>(getBvecFromExpr(e.arg(1), boundVars), op);
+    checkNumberOfArguments<2>(e);
 
-    return caches.insertIntoCaches(e, result, boundVars);
+    expr arg0 = e.arg(0);
+    expr arg1 = e.arg(1);
+
+    expr zero = context->bv_val(0, 1);
+    expr one = context->bv_val(1, 1);
+
+    int size = e.arg(0).get_sort().bv_size();
+    expr msb_s = arg0.extract(size - 1, size - 1);
+    expr msb_t = arg1.extract(size - 1, size - 1);
+    expr ex = ite(msb_s == zero && msb_t == zero,
+            op(arg0, arg1),
+            ite(msb_s == one && msb_t == zero,
+                    -op(-arg0, arg1),
+                    ite(msb_s == zero && msb_t == one,
+                            -op(arg0, -arg1),
+                            op(-arg0, -arg1))));
+
+    caches.clearCaches(); // why?
+    auto result = getBvecFromExpr(ex, boundVars);
+    return caches.insertIntoCaches(ex, result, boundVars);
 }
 
-Approximated<Bvec> ExprToBDDTransformer::bvec_unOp(const z3::expr &e, const std::function<Bvec(Bvec)> &op, const std::vector<boundVar> &boundVars)
+Approximated<Bvec> ExprToBDDTransformer::getIte(const expr &e, const vector<boundVar> &boundVars)
 {
-    auto result = getBvecFromExpr(e.arg(0), boundVars).Apply<Bvec>(op);
+    checkNumberOfArguments<3>(e);
 
-    return caches.insertIntoCaches(e, result, boundVars);
+    //TODO: Tohle může být nekorektní kvůli isPositive!!!
+    auto arg0 = getBDDFromExpr(e.arg(0), boundVars, false, true);
+    if (arg0.upper != arg0.lower) {
+        auto unknown = Bvec{ bddManager,
+            e.get_sort().bv_size(),
+            MaybeBDD{} };
+        return caches.insertIntoCaches(e, { unknown, APPROXIMATED, APPROXIMATED }, boundVars);
+    }
+
+    Bvec result(bddManager);
+
+    if (config.lazyEvaluation && arg0.lower.IsOne()) {
+        result = getBvecFromExpr(e.arg(1), boundVars).value;
+    } else if (config.lazyEvaluation && arg0.upper.IsZero()) {
+        result = getBvecFromExpr(e.arg(2), boundVars).value;
+    } else {
+        auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
+        auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
+        auto maybeArg0 = MaybeBDD(arg0.upper);
+
+        if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
+                operationPrecision != 0) {
+            auto state = caches.findStateInCaches(e, boundVars);
+            bool createdFreshState = state.IsFresh();
+            result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
+            caches.insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, createdFreshState);
+        } else {
+            result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
+                    arg1,
+                    arg2);
+        }
+    }
+
+    return caches.insertIntoCaches(e, { result, APPROXIMATED, APPROXIMATED }, boundVars);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// UTILS /////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ExprToBDDTransformer::isInterrupted()
+{
+    return Solver::resultComputed;
+}
+
+template <typename T, typename TorderFunc>
+void ExprToBDDTransformer::sortVec(std::vector<T> &vec, TorderFunc &&orderExpr)
+{
+    std::sort(vec.begin(), vec.end(), [&](const auto &a, const auto &b) -> bool {
+        return orderExpr(a, b);
+    });
+}
+
+void ExprToBDDTransformer::sortVec(std::vector<BDDInterval> &vec)
+{
+    sortVec(vec, [&](auto &a, auto &b) { return bddManager.nodeCount(std::vector<BDD>{ a.upper }) < bddManager.nodeCount(std::vector<BDD>{ b.upper }); });
+}
+
+void ExprToBDDTransformer::sortVec(std::vector<std::pair<z3::expr, unsigned int>> &vec)
+{
+    sortVec(vec, [](auto &a, auto &b) { return a.second < b.second; });
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// PUBLIC FUNCTIONS //////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ExprToBDDTransformer::PrintNecessaryValues(BDD bdd)
+{
+    for (const auto &c : constSet) {
+        PrintNecessaryVarValues(bdd, c.first);
+    }
 }
 
 Model ExprToBDDTransformer::GetModel(BDD modelBdd)
@@ -1047,47 +1131,4 @@ void ExprToBDDTransformer::PrintNecessaryVarValues(BDD bdd, const std::string &v
     if (newVal) {
         caches.clearCurrentBwAndPrecCaches();
     }
-}
-
-void ExprToBDDTransformer::PrintNecessaryValues(BDD bdd)
-{
-    for (const auto &c : constSet) {
-        PrintNecessaryVarValues(bdd, c.first);
-    }
-}
-
-bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
-{
-    return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.begin(), [](auto &bit) { return bit.IsOne(); });
-}
-
-bool ExprToBDDTransformer::isInterrupted()
-{
-    return Solver::resultComputed;
-}
-
-template <typename T, typename TorderFunc>
-void ExprToBDDTransformer::sortVec(std::vector<T> &vec, TorderFunc &&orderExpr)
-{
-    std::sort(vec.begin(), vec.end(), [&](const auto &a, const auto &b) -> bool {
-        return orderExpr(a, b);
-    });
-}
-
-void ExprToBDDTransformer::sortVec(std::vector<BDDInterval> &vec)
-{
-    sortVec(vec, [&](auto &a, auto &b) { return bddManager.nodeCount(std::vector<BDD>{ a.upper }) < bddManager.nodeCount(std::vector<BDD>{ b.upper }); });
-}
-
-void ExprToBDDTransformer::sortVec(std::vector<std::pair<z3::expr, unsigned int>> &vec)
-{
-    sortVec(vec, [](auto &a, auto &b) { return a.second < b.second; });
-}
-
-BDDInterval ExprToBDDTransformer::getBdd(unsigned int i, const std::vector<BDDInterval> &bddSubResults, const std::vector<std::pair<z3::expr, unsigned int>> &exprExpensiveOpsVec, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive)
-{
-    if (config.lazyEvaluation) {
-        return getBDDFromExpr(exprExpensiveOpsVec[i].first, boundVars, onlyExistentials, isPositive);
-    }
-    return bddSubResults[i];
 }

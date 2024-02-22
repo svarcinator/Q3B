@@ -23,7 +23,7 @@ struct Config
     bool flipUniversalQuantifier = false;
     bool propagateNecessaryBits = true;
 
-    bool produceModels = true;
+    bool produceModels = false;
     bool validatingSolver = false;
 
     bool lazyEvaluation = false;

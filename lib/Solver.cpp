@@ -329,6 +329,7 @@ Result Solver::runWithApproximations(ExprToBDDTransformer &transformer, Approxim
         unsigned int lastBW = 1;
         while (prec != 0 && !resultComputed) {
             if (prec == 4 && approximation == OVERAPPROXIMATION) {
+                // why?
                 Result approxResult = runFunction(transformer, 128, 2);
                 if (approxResult != UNKNOWN) {
                     return approxResult;
