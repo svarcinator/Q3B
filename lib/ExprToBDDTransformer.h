@@ -127,7 +127,7 @@ class ExprToBDDTransformer
     Approximated<Bvec> getDivOrRem(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getSignedDivRem(const z3::expr &e, const std::vector<boundVar> &boundVars, z3::expr (*op)( const z3::expr &e1, const z3::expr &e2));
     Approximated<Bvec> getIte(const z3::expr &e, const std::vector<boundVar> &);
-    
+
     // helper funcs
 
     Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
@@ -156,6 +156,11 @@ class ExprToBDDTransformer
     Approximated<Bvec> bvec_assocOp(const z3::expr &, const std::function<Bvec(Bvec, Bvec)> &, const std::vector<boundVar> &);
     Approximated<Bvec> bvec_binOp(const z3::expr &, const std::function<Bvec(Bvec, Bvec)> &, const std::vector<boundVar> &);
     Approximated<Bvec> bvec_unOp(const z3::expr &, const std::function<Bvec(Bvec)> &, const std::vector<boundVar> &);
+
+
+    Approximated<Bvec> bvec_binaryOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, Bvec, std::vector<Interval>)> &op, 
+                                            const std::function<std::vector<Interval>(std::vector<Interval>,std::vector<Interval>)>& intervalOp,
+                                            const std::vector<boundVar> &);
 
     Config config;
 

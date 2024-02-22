@@ -135,6 +135,7 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     cacheHits = 0;
 
     if (lastBW != variableBitWidth) {
+        caches.setCurrentBWasPrevBW();  // coppies precise bvec, so the can be used in further computation
         caches.clearCurrentBwCaches();
         lastBW = variableBitWidth;
     }
@@ -694,6 +695,26 @@ Approximated<Bvec> ExprToBDDTransformer::bvec_assocOp(const z3::expr &e, const s
     return caches.insertIntoCaches(e, toReturn, boundVars);
 }
 
+/// @brief  Binary operations with approximated variables. Finds resulting bvec computed for lower bit width and uses it for further computation.
+/// @param e 
+/// @param op 
+/// @param boundVars 
+/// @return computed bitvector
+Approximated<Bvec> ExprToBDDTransformer::bvec_binaryOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, Bvec, std::vector<Interval>)> &op, 
+                                                                const std::function<std::vector<Interval>(std::vector<Interval>,std::vector<Interval>)>& intervalOp,
+                                                                const std::vector<boundVar> &boundVars)
+{
+    
+    assert(e.num_args() == 2);
+    auto bvec1 = getBvecFromExpr(e.arg(0), boundVars);
+    auto bvec2 = getBvecFromExpr(e.arg(1), boundVars);
+    std::vector<Interval> interv = {{INTMAX_MAX, 0}};   // zatim, pak pridat real interval
+    auto resInterval= intervalOp(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
+    auto result = bvec1.Apply2<Bvec>(bvec2, op,interv); 
+ 
+    return caches.insertIntoCaches(e, result, boundVars);
+}
+
 Approximated<Bvec> ExprToBDDTransformer::bvec_binOp(const z3::expr &e, const std::function<Bvec(Bvec, Bvec)> &op, const std::vector<boundVar> &boundVars)
 {
     auto result = getBvecFromExpr(e.arg(0), boundVars).Apply2<Bvec>(getBvecFromExpr(e.arg(1), boundVars), op);
@@ -803,9 +824,10 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
     boundVar bVar = boundVars[boundVars.size() - deBruijnIndex - 1];
 
     if (shouldApproximateVar(bVar)) {
-        return getApproximatedVariable(bVar.first, variableBitWidth, approximationType);
+        // if prooves succesful, then merge into insertIntoCaches
+        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum()) ); // latter arg is number of bits of the var
+        return caches.insertIntoCaches(e,getApproximatedVariable(bVar.first, variableBitWidth, approximationType), boundVars);
     }
-
     return caches.insertIntoCaches(e, { vars.at(bVar.first), PRECISE }, boundVars);
 }
 
@@ -813,11 +835,11 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
 {
     Bvec result(bddManager);
     if ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) && approximation == UNDERAPPROXIMATION) {
+        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(e.to_string()).bitnum()) );
         std::unique_lock<std::mutex> lk(Solver::m_z3context);
         auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
         return caches.insertIntoCaches(e, result, boundVars);
     }
-
     std::unique_lock<std::mutex> lk(Solver::m_z3context);
     return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
 }
@@ -832,6 +854,15 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
         return res;
+    } else if (config.approximationMethod == VARIABLES) {
+        // if only VARIABLES approximated (not OPERATIONS -- tbd later)
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        if (prevBvec.has_value()){
+            auto res = bvec_binaryOpApprox(
+                e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
+                { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvec.value().value); }, // first value() is value from std::optional, second from Approximated
+                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddition(x, y);},boundVars); 
+        }
     }
 
     return bvec_assocOp(

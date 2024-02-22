@@ -27,6 +27,9 @@ class Caches
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> preciseBvecs;
     // Sofar not used anywhere
 
+    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> prevBWpreciseBvecs;
+    std::map<const Z3_ast, std::vector<Interval>> intervals;
+
     std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> bddExprCache;
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> bvecExprCache;
 
@@ -38,15 +41,25 @@ class Caches
     Approximated<Bvec> insertIntoCaches(const z3::expr&, const Approximated<Bvec>&, const std::vector<boundVar>&);
     BDDInterval insertIntoCaches(const z3::expr&, const BDDInterval&, const std::vector<boundVar>&, bool);
     void insertStateIntoCaches(const z3::expr &expr, const Computation_state& , const std::vector<boundVar> &,  const Approximated<Bvec>&, const bool);
+    void insertInterval(const z3::expr& e, const std::vector<Interval>&);
+    
     void clearCaches();
     void clearCurrentBwAndPrecCaches();
     void clearCurrentBwCaches();
     bool correctBoundVars(const std::vector<boundVar> &boundVars, const std::vector<boundVar> &cachedBoundVars) const;
+
+
     std::optional<Approximated<cudd::Bvec>> foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &boundVars) const;
     std::optional<BDDInterval> foundExprInCaches(const z3::expr &e,const std::vector<boundVar> &, bool ) const;
     Computation_state findStateInCaches(const z3::expr &e,const std::vector<boundVar> &) const;
+    std::optional<Approximated<cudd::Bvec>> findPrevBWPreciseBvec(const z3::expr &e,const std::vector<boundVar> &)const ;
+    std::vector<Interval> findInterval(const z3::expr& e) const;
 
     void pruneBvecCache(const std::vector<boundVar>& );
     void pruneBddCache(const std::vector<boundVar>& );
+
+    void setCurrentBWasPrevBW();
+
+
 };
 #endif

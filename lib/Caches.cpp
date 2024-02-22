@@ -38,6 +38,10 @@ void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state
     }
 }
 
+void Caches::insertInterval(const z3::expr& e, const std::vector<Interval>& interval) {
+    intervals.insert({(Z3_ast) e,interval });
+}
+
 void Caches::clearCaches()
 {
     bddExprCache.clear();
@@ -47,6 +51,7 @@ void Caches::clearCaches()
     sameBWPreciseBdds.clear();
     sameBWPreciseBvecs.clear();
     sameBWImpreciseBvecStates.clear();
+    prevBWpreciseBvecs.clear();
 }
 // clears caches that store objest for current bitwidth and precision
 void Caches::clearCurrentBwAndPrecCaches()
@@ -113,8 +118,26 @@ Computation_state Caches::findStateInCaches(const z3::expr &e, const std::vector
     if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
         return sameBWImpreciseBvecStates.at((Z3_ast) e).first; 
     }
-    return { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };
-                    
+    return { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };                
+}
+
+std::optional<Approximated<cudd::Bvec>> Caches::findPrevBWPreciseBvec(const z3::expr &e,const std::vector<boundVar> & boundVars )const
+{
+    auto item = prevBWpreciseBvecs.find((Z3_ast) e);
+    if (item != prevBWpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
+        return prevBWpreciseBvecs.at((Z3_ast) e).first; 
+    }
+    return {};   
+
+}
+
+std::vector<Interval> Caches::findInterval(const z3::expr& e) const
+{
+    auto item = intervals.find((Z3_ast) e);
+    if (item != intervals.end() ) {
+        return intervals.at((Z3_ast) e); 
+    }
+    return {{INT_MAX, 0}};    // if expr not found return maximal interval -> whole bvec will be recomputed
 }
 
 void Caches::pruneBvecCache(const std::vector<boundVar> &newBoundVars)
@@ -137,4 +160,8 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
             it++;
         }
     }
+}
+
+void Caches::setCurrentBWasPrevBW() {
+        prevBWpreciseBvecs = preciseBvecs;
 }

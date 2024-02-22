@@ -20,15 +20,16 @@ class BWChangeEffect
     
   public:
 
-    void EffectOnVar(const z3::expr &e, const std::vector<boundVar> &boundVars);
-    std::vector<Interval> EffectOnVar(int, uint) const;
-    static  
-    void AreIntervalsCorrect(const std::vector<Interval> &intervals);
-    bool 
-    isVarAffected(const z3::expr &e, const std::vector<boundVar> &boundVars);
-
-    int getRightmostBit(const Interval &leftChange, const Interval &rightChange) const;
-    std::vector<Interval> EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) const;
+    static std::vector<Interval>
+    EffectOnVar(int, uint);
+    
+    static void 
+    AreIntervalsCorrect(const std::vector<Interval> &intervals);
+   
+    static int 
+    getRightmostBit(const Interval &leftChange, const Interval &rightChange);
+    static std::vector<Interval> 
+    EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
 
 };
 #endif

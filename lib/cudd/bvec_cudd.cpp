@@ -210,6 +210,17 @@ Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeB
     return res;
 }
 
+Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals,const Bvec &prev ) {
+    // m, i, precise, state -- precise now work as correctly compute for current BW
+    Computation_state state = {0,0,0, prev.m_bitvec, std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto rightmost = intervals.back().second;   // first one to be recomputed
+    if (rightmost != 0) {
+        state.bitvec = prev.m_bitvec;
+        state.i = rightmost;
+        state.preciseBdds = rightmost;
+    }
+    return bvec_add_nodeLimit(left, right, UINT_MAX, state);
+}
 Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
 {
     Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state

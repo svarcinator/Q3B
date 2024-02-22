@@ -14,7 +14,7 @@ using namespace z3;
 
 // only if aproximated
 // oldBW  = newBW - 2;
-std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount) const
+std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount)
 {
     assert(newBW != 0 && newBW % 2 == 0);
     // seems like there is always only middle extension applied
@@ -29,17 +29,18 @@ void BWChangeEffect::AreIntervalsCorrect(const std::vector<Interval> &intervals)
     testIntervals(intervals);
 }
 
-int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &rightChange) const {
+int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &rightChange)  {
     return std::min(leftChange.second, rightChange.second);
 }
 
-std::vector<Interval> BWChangeEffect::EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) const
+std::vector<Interval> BWChangeEffect::EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange)
 {
     // Recompute everything (to left) from the rightmost changed bit.
     // Because of carry bit
 
     auto rightmostChangedBit = getRightmostBit(leftChange.back(), rightChange.back());
-    return {{INTMAX_MAX,rightmostChangedBit }};    // unbounded interval on left -- means from right to the left end of bitvector
+    return {{INT_MAX,rightmostChangedBit }};    // unbounded interval on left -- means from right to the left end of bitvector
 }
+
 
 

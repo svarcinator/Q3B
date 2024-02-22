@@ -11,6 +11,9 @@
 #include <sstream>
 #include <vector>
 
+
+typedef std::pair<int, int> Interval;
+
 struct Computation_state
 {
     unsigned int m = 0;  //multiplication
@@ -123,6 +126,8 @@ class Bvec
     static Bvec
     bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun);
 
+    static Bvec 
+    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals,const Bvec &prev );
     static Bvec
     bvec_add(const Bvec &left, const Bvec &right);
 
