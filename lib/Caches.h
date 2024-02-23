@@ -55,6 +55,9 @@ class Caches
     std::optional<Approximated<cudd::Bvec>> findPrevBWPreciseBvec(const z3::expr &e,const std::vector<boundVar> &)const ;
     std::vector<Interval> findInterval(const z3::expr& e) const;
 
+    static Computation_state 
+    getstateFromBvec(const std::optional<Approximated<cudd::Bvec>>& bvec);
+
     void pruneBvecCache(const std::vector<boundVar>& );
     void pruneBddCache(const std::vector<boundVar>& );
 

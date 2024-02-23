@@ -26,7 +26,7 @@
 #include "BWChangeEffect.h"
 
 typedef std::pair<std::string, int> var;
-
+enum IncrementedApproxStyle {BIT_WIDTH, PRECISION};
 
 typedef std::pair<std::string, BoundType> boundVar;
 
@@ -137,14 +137,15 @@ class ExprToBDDTransformer
     Bvec getNumeralBvec(const z3::expr &);
     bool isMinusOne(const Bvec &);
 
-
     std::vector<boundVar> getNewBounds(const z3::expr &e, const std::vector<boundVar> &boundVars);
-    Approximation approximation;
-    int variableBitWidth;
 
+    Approximation approximation;
+    ApproximationType approximationType;
+    IncrementedApproxStyle incrementedApproxStyle;  // what change most recently -- bitwidth or precision
+    int variableBitWidth;
     unsigned int operationPrecision;
 
-    ApproximationType approximationType;
+    
 
     bool variableApproximationHappened = false;
     bool operationApproximationHappened = false;

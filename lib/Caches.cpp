@@ -118,7 +118,7 @@ Computation_state Caches::findStateInCaches(const z3::expr &e, const std::vector
     if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
         return sameBWImpreciseBvecStates.at((Z3_ast) e).first; 
     }
-    return { 0, 0, 0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>() };                
+    return Computation_state();                
 }
 
 std::optional<Approximated<cudd::Bvec>> Caches::findPrevBWPreciseBvec(const z3::expr &e,const std::vector<boundVar> & boundVars )const
@@ -128,6 +128,15 @@ std::optional<Approximated<cudd::Bvec>> Caches::findPrevBWPreciseBvec(const z3::
         return prevBWpreciseBvecs.at((Z3_ast) e).first; 
     }
     return {};   
+
+}
+
+Computation_state Caches::getstateFromBvec(const std::optional<Approximated<cudd::Bvec>>& bvec)
+{
+    if (bvec.has_value()) {
+        return Computation_state(bvec.value().value.m_bitvec);
+    }
+    return Computation_state();
 
 }
 

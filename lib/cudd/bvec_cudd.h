@@ -10,23 +10,59 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <limits.h>
 
 
-typedef std::pair<int, int> Interval;
+typedef std::pair<size_t, size_t> Interval;
 
 struct Computation_state
 {
+    std::vector<Interval> intervals;
     unsigned int m = 0;  //multiplication
-    unsigned int i = 0u; // multiplication, division
+    //unsigned int i = 0u; // multiplication, division
     unsigned int preciseBdds = 0;
     std::vector<MaybeBDD> bitvec;    // multiplication, division (res)
     std::vector<MaybeBDD> remainder; // division
     std::vector<MaybeBDD> div;       // division
 
+    Computation_state()
+    {
+        intervals = {{INT_MAX,0}};
+        bitvec = std::vector<MaybeBDD>();
+        remainder = std::vector<MaybeBDD>();
+        div = std::vector<MaybeBDD>();
+    }
+
+    Computation_state(std::vector<Interval> intervals)
+    {
+        intervals = intervals;
+        bitvec = std::vector<MaybeBDD>();
+        remainder = std::vector<MaybeBDD>();
+        div = std::vector<MaybeBDD>();
+    }
+    Computation_state(Interval interval)
+    {
+        intervals = {interval};
+        bitvec = std::vector<MaybeBDD>();
+        remainder = std::vector<MaybeBDD>();
+        div = std::vector<MaybeBDD>();
+    }
+    Computation_state(std::vector<MaybeBDD> m_bitvec)
+    {
+        intervals = {{INT_MAX,0}};
+        bitvec = m_bitvec;
+        remainder = std::vector<MaybeBDD>();
+        div = std::vector<MaybeBDD>();
+    }
+
     std::string toString() const
     {
         std::stringstream ss;
-        ss << "Computation state\n m: " << m << "\n i: " << i << "\n PreciseBdds: " << preciseBdds << "\n Size: " << bitvec.size() << std::endl;
+        ss << "Computation state\n m: " << m << "\n";
+        for (int i = 0 ; i < intervals.size(); ++i) {
+            ss << "interval " << i << " is from " << intervals[i].first << " to " <<  intervals[i].second << "\n";
+        }
+        ss << " PreciseBdds: " << preciseBdds << "\n Size: " << bitvec.size() << std::endl;
         for (unsigned int i = 0; i < bitvec.size(); ++i) {
             ss << " Pos=" << i << ", value/nodes=" << bitvec[i].HasValue() << "/" << bitvec[i].NodeCount() << std::endl;
         }
@@ -35,7 +71,7 @@ struct Computation_state
 
     bool IsFresh() const
     {
-        return (m ==0 && i == 0 && preciseBdds == 0 && bitvec.empty() && remainder.empty() && div.empty());
+        return (m ==0 && (intervals.back().second == 0) && preciseBdds == 0 && bitvec.empty() && remainder.empty() && div.empty());
     }
     
 };
@@ -126,13 +162,16 @@ class Bvec
     static Bvec
     bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun);
 
+    static MaybeBDD 
+    get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) ;
+
     static Bvec 
-    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals,const Bvec &prev );
+    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state & );
     static Bvec
     bvec_add(const Bvec &left, const Bvec &right);
 
     static void
-    add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state &state, MaybeBDD &carry);
+    add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval);
 
     static Bvec
     bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
@@ -140,7 +179,7 @@ class Bvec
     static Bvec
     bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int);
     static void
-    sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state &state, MaybeBDD &carry);
+    sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval);
     static Bvec
     bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit);
 
@@ -157,7 +196,7 @@ class Bvec
     bvec_mul(const Bvec &left, const Bvec &right);
 
     static void
-    multiplication_body(Bvec &leftshift, const Bvec &right, unsigned int, const size_t, Computation_state &);
+    multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int , const size_t , Computation_state& , Interval& );
 
     static Bvec
     bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
@@ -166,10 +205,10 @@ class Bvec
     bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int);
 
     static bool
-    add_leftshift_to_result(Bvec const &,
-            Bvec const &,
-            unsigned int,
-            Computation_state &);
+    add_leftshift_to_result(Bvec const &leftshift,
+                    Bvec const& right,
+                    unsigned int nodeLimit,
+                    Computation_state& state, int i);
 
     int
     bvec_divfixed(size_t con, Bvec &result, Bvec &rem) const;
@@ -184,7 +223,7 @@ class Bvec
     bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, Bvec &rem, unsigned int, Computation_state &);
 
     static void
-    ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state &state);
+    ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int , Computation_state& , Interval&  );
 
     static Bvec
     bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int, Computation_state &);

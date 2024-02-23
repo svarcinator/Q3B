@@ -5,7 +5,7 @@
 #include <utility>
 #include <cassert>
 
-typedef std::pair<int, int> Interval;
+typedef std::pair<std::size_t, std::size_t> Interval;
 ////////////////////////////////
 ///// TEST INTERVAL ////////////
 ////////////////////////////////

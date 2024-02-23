@@ -209,27 +209,21 @@ Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeB
     }
     return res;
 }
-
-Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals,const Bvec &prev ) {
-    // m, i, precise, state -- precise now work as correctly compute for current BW
-    Computation_state state = {0,0,0, prev.m_bitvec, std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
-    auto rightmost = intervals.back().second;   // first one to be recomputed
-    if (rightmost != 0) {
-        state.bitvec = prev.m_bitvec;
-        state.i = rightmost;
-        state.preciseBdds = rightmost;
-    }
-    return bvec_add_nodeLimit(left, right, UINT_MAX, state);
+// addition with use of previous results (results for previous bit width)
+Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState ) {
+    
+    prevState.intervals = intervals;
+    return bvec_add_nodeLimit(left, right, UINT_MAX, prevState);
 }
 Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto state = Computation_state(); // fresh computation state
     return bvec_add_nodeLimit(left, right, UINT_MAX, state);
 }
 
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto state = Computation_state(); // fresh computation state
     return bvec_add_nodeLimit(left, right, nodeLimit, state);
 
 }
@@ -246,12 +240,12 @@ unsigned int Bvec::count_precise_bdds(const std::vector<MaybeBDD>& bitvec)
 
 
 // return true iff nodeLimit reached
-void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry)
+void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval)
 {
-    while (state.i < left.bitnum()) {
-        state.bitvec[state.i] = ((left[state.i] ^ right[state.i]) ^ carry);
-        carry = (left[state.i] & right[state.i]) | (carry & (left[state.i] | right[state.i]));
-        ++state.i;
+    while (interval.second < std::min(left.bitnum(),  interval.first)) {
+        state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
+        carry = (left[interval.second] & right[interval.second]) | (carry & (left[interval.second] | right[interval.second]));
+        ++interval.second;
         ++state.preciseBdds;
         if (nodeLimit != UINT_MAX && Bvec::bddNodes(state.bitvec) >  nodeLimit) {
             return;
@@ -259,6 +253,16 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     }
 }
 
+// returns carry bit. i is the first index that will be computed.
+// therefore we need carry bit from index i-1
+MaybeBDD Bvec::get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) {
+    if (interval.second == 0) {
+        return MaybeBDD(manager.bddZero());
+    }
+    return bitvec[interval.second  - 1] ^ left[interval.second   - 1] ^ right[interval.second  - 1];;
+}
+
+// state.intervals contain indices that need to be recomputed (either contain ? or are computed for smaller bit width)
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {   
     
@@ -269,31 +273,23 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     if (left.supportSize() > right.supportSize()) {
         return bvec_add_nodeLimit(right, left, nodeLimit, state);
     }
-
-    
-
-    MaybeBDD carry(manager.bddZero());   // carry bit
     if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
-    } else {
-        //state.bitvec MaybeBdd vec already created in previous iterations 
-        carry = state.bitvec[state.preciseBdds - 1] ^ left[state.preciseBdds - 1] ^ right[state.preciseBdds - 1];
-        //std::cout << state.to_string();
-        //assert(state.preciseBdds == count_precise_bdds(state.bitvec));
     }
 
-    add_body(left, right, nodeLimit,state, carry);
-    // if not preciselly computed, most significant MaybeBDDs already have ? value
-    
+    for (Interval& interval : state.intervals) {
+        MaybeBDD carry = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+        add_body(left, right, nodeLimit,state, carry, interval);
+    }
     return Bvec(manager, state.bitvec);
 }
 
-void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry){
+void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval){
 
-    while (state.i < left.bitnum()) {
-        state.bitvec[state.i] = ((left[state.i] ^ right[state.i]) ^ carry);
-        carry = (left[state.i] & right[state.i] & carry) | ((~left[state.i] & ( carry | right[state.i])));
-        ++state.i;
+    while (interval.second < std::min(left.bitnum(),  interval.first)) {
+        state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
+        carry = (left[interval.second] & right[interval.second] & carry) | ((~left[interval.second] & ( carry | right[interval.second])));
+        ++interval.second;
         ++state.preciseBdds;
         if (nodeLimit != UINT_MAX && Bvec::bddNodes(state.bitvec) >  nodeLimit) {
             return;
@@ -307,20 +303,19 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
         return Bvec(manager);
     }
-
-    MaybeBDD carry(manager.bddZero());   // carry bit
     if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
-    } else {
-        //state.bitvec MaybeBdd vec already created in previous iterations 
-        carry = state.bitvec[state.preciseBdds - 1] ^ left[state.preciseBdds - 1] ^ right[state.preciseBdds - 1];
+    } 
+
+    for (Interval& interval : state.intervals) {
+        MaybeBDD carry = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+        sub_body(left, right, nodeLimit,state, carry, interval);
     }
 
-    sub_body(left, right, nodeLimit, state, carry);
     return Bvec(manager, state.bitvec);
 }
 Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit){
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
+    auto state = Computation_state();
     return Bvec::bvec_sub(left, right, nodeLimit, state);
 
 }
@@ -329,7 +324,7 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 
 Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};
+    auto state = Computation_state();
     return Bvec::bvec_sub(left, right, UINT_MAX, state);
     
 }
@@ -387,7 +382,7 @@ void shift_left(Bvec& v, BDD zero){
 bool Bvec::add_leftshift_to_result(Bvec const &leftshift,
                     Bvec const& right,
                     unsigned int nodeLimit,
-                    Computation_state& state)
+                    Computation_state& state, int i)
 {
     auto const reachedLimit = [nodeLimit](MaybeBDD const &mb){
         return nodeLimit != UINT_MAX && mb.NodeCount() > nodeLimit;
@@ -396,7 +391,7 @@ bool Bvec::add_leftshift_to_result(Bvec const &leftshift,
 
     Bvec added = bvec_add(Bvec(manager, state.bitvec), leftshift);
     while (state.m < right.bitnum()) {
-        state.bitvec[state.m] = right[state.i].Ite(added[state.m], state.bitvec[state.m]);
+        state.bitvec[state.m] = right[i].Ite(added[state.m], state.bitvec[state.m]);
         if (reachedLimit(state.bitvec[state.m])) {
             ++state.m;  // m-th Bdd is already computed
             return true;
@@ -423,18 +418,18 @@ Bvec shift_left_by_n(Bvec v, size_t n, BDD zero) {
 
 
 
-void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int nodeLimit, const size_t bitnum, Computation_state& state)
+void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int nodeLimit, const size_t bitnum, Computation_state& state, Interval& interval)
 {
     
     
     Cudd &manager = check_same_cudd(*leftshift.m_manager, *right.m_manager);
 
-    while (state.i < right.bitnum()) {
-        if (right[state.i].IsZero()) {
+    while (interval.second < std::min(right.bitnum(), interval.first)) {
+        if (right[interval.second].IsZero()) {
             state.preciseBdds++;
         } else {
             
-            auto tooManyNodes =  add_leftshift_to_result(leftshift, right, nodeLimit, state);
+            auto tooManyNodes =  add_leftshift_to_result(leftshift, right, nodeLimit, state, interval.second);
             if (state.m >= state.preciseBdds) {
                 state.preciseBdds++;
             }
@@ -445,8 +440,8 @@ void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int 
 
          /* Shift 'leftshift' one bit left */
         shift_left(leftshift,  manager.bddZero()) ;
-        ++state.i;
-        state.m = state.i;
+        ++interval.second;
+        state.m = interval.second;
     }
 }
 
@@ -454,7 +449,9 @@ void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int 
 // @param nodeLimit: maximal number of nodes in one BDD-bit. if UINT_MAX, then no limit
 Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {
-    
+    // if there re more intervals then this function will need to be adjusted, such implementation is not planned though
+    assert(state.intervals.size() == 1);    
+
     size_t bitnum = std::max(left.bitnum(), right.bitnum());
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     Bvec res = bvec_false(manager, bitnum);
@@ -471,9 +468,9 @@ Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigne
         return bvec_mul_nodeLimit_state(right, left, nodeLimit, state);
     }
     
-    Bvec leftshift = shift_left_by_n(left.bvec_coerce(bitnum), state.i, manager.bddZero());
+    Bvec leftshift = shift_left_by_n(left.bvec_coerce(bitnum), state.intervals.back().second, manager.bddZero());
     // computes the multiplication and stores it in state.bitvec
-    multiplication_body(leftshift, right, nodeLimit, bitnum, state);
+    multiplication_body(leftshift, right, nodeLimit, bitnum, state, state.intervals.back());
 
 
     // copy computed value to res
@@ -492,7 +489,7 @@ Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigne
 
 Bvec Bvec::bvec_mul_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto state = Computation_state(); // fresh computation state
     return bvec_mul_nodeLimit_state(left, right, nodeLimit, state);
 
 }
@@ -541,7 +538,7 @@ int Bvec::bvec_divfixed(size_t con, Bvec &result, Bvec &rem) const
 
 int Bvec::bvec_div(const Bvec &left, const Bvec &right, Bvec &result, Bvec &remainder)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto state = Computation_state(); // fresh computation state
     
     return bvec_div_nodeLimit(left, right, result, remainder, UINT_MAX, state);
 }
@@ -549,7 +546,7 @@ int Bvec::bvec_div(const Bvec &left, const Bvec &right, Bvec &result, Bvec &rema
 
 void Bvec::div_body(const Bvec &right, const size_t bitnum, unsigned int nodeLimit, Computation_state& state, MaybeBDD zero,Bvec& div, Bvec& rem ){
     
-    while ( state.i < right.bitnum() + 1) {
+    while ( state.intervals.back().second < right.bitnum() + 1) {
 
         MaybeBDD divLteRem = Bvec::bvec_lte(div, rem);
         Bvec remSubDiv = Bvec::bvec_sub(rem, div);
@@ -558,12 +555,12 @@ void Bvec::div_body(const Bvec &right, const size_t bitnum, unsigned int nodeLim
             rem[j] = divLteRem.Ite(remSubDiv[j], rem[j]);
         }
 
-        if (state.i > 0) {
-            state.bitvec[right.bitnum() - state.i] = divLteRem;
+        if (state.intervals.back().second > 0) {
+            state.bitvec[right.bitnum() - state.intervals.back().second] = divLteRem;
         }
 
         ++state.preciseBdds;
-        ++state.i;
+        ++state.intervals.back().second;
         
         /* Shift 'div' one bit right */
         for (size_t j = 0U; j < bitnum - 1; ++j) {
@@ -578,7 +575,9 @@ void Bvec::div_body(const Bvec &right, const size_t bitnum, unsigned int nodeLim
 
 int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, Bvec &remainder, unsigned int nodeLimit, Computation_state& state)
 {
-    
+    // if there re more intervals then this function will need to be adjusted, such implementation is not planned though
+    assert(state.intervals.size() == 1);    
+
     size_t bitnum = left.bitnum() + right.bitnum();
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
@@ -629,14 +628,14 @@ int Bvec::bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, 
 
 Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right)
 {
-    Computation_state state = {0,0,0, std::vector<MaybeBDD>(), std::vector<MaybeBDD>(), std::vector<MaybeBDD>()};  // fresh computation state
+    auto state = Computation_state();  // fresh computation state
     return bvec_ite(val, left, right, UINT_MAX, state);
 }
 
-void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state){
-    while (state.i < left.bitnum()) {
-            state.bitvec[state.i]= (val.Ite(left[state.i], right[state.i]));
-            ++state.i;
+void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, Interval& interval ){
+    while (interval.second < std::min(left.bitnum(), interval.first )) {
+            state.bitvec[interval.second]= (val.Ite(left[interval.second], right[interval.second]));
+            ++interval.second;
 
             if (nodeLimit != UINT_MAX && Bvec::bddNodes(state.bitvec) > nodeLimit) {
                 break;
@@ -660,7 +659,10 @@ Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right, un
     assert(state.bitvec.size() == left.bitnum());
     
     if (nodeLimit != 0) {
-        ite_body(val, left, right, nodeLimit, state);
+        for(Interval& interval : state.intervals) {
+            ite_body(val, left, right, nodeLimit, state, interval);
+        }
+        
     }
     Bvec res(manager, state.bitvec);
     // most significant bits have already ? value

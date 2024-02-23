@@ -9,7 +9,7 @@
 #include "Caches.h"
 
 
-typedef std::pair<int, int> Interval;
+typedef std::pair<size_t, size_t> Interval;
 typedef std::pair<std::string, int> var;
 
 
