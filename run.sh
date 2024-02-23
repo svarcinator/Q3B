@@ -12,6 +12,6 @@ echo "     RUNNING     "
 echo "#################"
 
 
-./build/q3b --abstraction=under --abstract:method=variables --lazy-evaluation=1 --verbosity=5 ./benchmarks/188.smt2
+./build/q3b --abstraction=under --abstract:method=variables --lazy-evaluation=1 --verbosity=5 ./benchmarks/RNDPRE_4_42.smt2
 
 
