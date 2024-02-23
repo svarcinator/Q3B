@@ -36,7 +36,7 @@ int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &
     return std::min(leftChange.second, rightChange.second);
 }
 
-std::vector<Interval> BWChangeEffect::EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange)
+std::vector<Interval> BWChangeEffect::EffectOnAddorSub(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange)
 {
     // Recompute everything (to left) from the rightmost changed bit.
     // Because of carry bit

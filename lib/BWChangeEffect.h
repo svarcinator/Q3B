@@ -29,7 +29,7 @@ class BWChangeEffect
     static int 
     getRightmostBit(const Interval &leftChange, const Interval &rightChange);
     static std::vector<Interval> 
-    EffectOnAddition(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
+    EffectOnAddorSub(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
 
 };
 #endif

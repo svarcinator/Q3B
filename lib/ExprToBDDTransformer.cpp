@@ -863,7 +863,7 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
         auto res = bvec_binaryOpApprox(
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState); },
-                [](auto x, auto y) {return BWChangeEffect::EffectOnAddition(x, y);},boundVars);
+                [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
         return res; 
         
@@ -876,7 +876,7 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
 Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const vector<boundVar> &boundVars)
 {
     checkNumberOfArguments<2>(e);
-    if (areOpsApproximated()) {
+    if (areOpsApproximated()  && incrementedApproxStyle == PRECISION) {
         auto state = caches.findStateInCaches(e, boundVars);
         bool createdFreshState = state.IsFresh();
         auto res = bvec_assocOp(
@@ -884,6 +884,16 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
         return res;
+    } else if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH)
+    {
+        auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        
+        auto res = bvec_binaryOpApprox(
+            e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
+            { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState); },
+                [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
+        caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
+        return res; 
     }
     return bvec_binOp(
             e, [](auto x, auto y) { return x - y; }, boundVars);

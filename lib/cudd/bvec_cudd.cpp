@@ -284,6 +284,12 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     return Bvec(manager, state.bitvec);
 }
 
+Bvec Bvec::bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState ) {
+    
+    prevState.intervals = intervals;
+    return bvec_sub(left, right, UINT_MAX, prevState);
+}
+
 void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval){
 
     while (interval.second < std::min(left.bitnum(),  interval.first)) {

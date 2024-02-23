@@ -22,7 +22,7 @@ bool testIntervalsOverlap(const std::vector<Interval> &intervals)
     if (intervals.size() == 1)
         return true;
 
-    for (int i = 1; i < intervals.size(); ++i) {
+    for (std::size_t i = 1; i < intervals.size(); ++i) {
         auto left = intervals[i - 1];
         auto right = intervals[i];
         // lowest of left interval is greater that greatest of right interval
@@ -39,7 +39,7 @@ bool testIntervalsOrder(const std::vector<Interval> &intervals)
     if (intervals.size() == 1)
         return true;
 
-    for (int i = 1; i < intervals.size(); ++i) {
+    for (std::size_t i = 1; i < intervals.size(); ++i) {
         auto left = intervals[i - 1];
         auto right = intervals[i];
         // lowest of left interval is greater that greatest of right interval
