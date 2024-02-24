@@ -35,7 +35,15 @@ class BWChangeEffect
 
     static std::vector<Interval>
     EffectFromLeastSignChangedBit(const std::vector<Interval>  &);
-
+    
+    static std::vector<Interval>
+    EffectOfUnion(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
+    static Interval 
+    merge(const Interval& l, const Interval& r) ;
+    static bool 
+    doOverlap(const Interval& l, const Interval& r);
+    static std::vector<Interval> 
+    getSortedIntervals(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
 };
 #endif
 

@@ -879,7 +879,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
             return bvec_unOpApprox( e,
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::arithmetic_neg_prev(x,changeInterval, prevBvecState); },
             [&](auto x) {return BWChangeEffect::EffectFromLeastSignChangedBit(x);}, 
-            boundVars); // same effect (interval) as on child
+            boundVars); 
         }  
     }
     return bvec_unOp(
