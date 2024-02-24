@@ -119,6 +119,7 @@ class ExprToBDDTransformer
     // Functions called in ExprToBDDTransformer::getBvecFromExpr 
     Approximated<Bvec> getVar(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getConst(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getBNot(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getAddition(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getSubstraction(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getConcat(const z3::expr &e, const std::vector<boundVar> &);

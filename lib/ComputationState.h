@@ -22,9 +22,9 @@ struct Computation_state
         div = std::vector<MaybeBDD>();
     }
 
-    Computation_state(std::vector<Interval> intervals)
+    Computation_state(std::vector<Interval> interv)
     {
-        intervals = intervals;
+        intervals = interv;
         bitvec = std::vector<MaybeBDD>();
         remainder = std::vector<MaybeBDD>();
         div = std::vector<MaybeBDD>();
