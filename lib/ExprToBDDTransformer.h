@@ -162,6 +162,10 @@ class ExprToBDDTransformer
     Approximated<Bvec> bvec_binaryOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, Bvec, std::vector<Interval>)> &op, 
                                             const std::function<std::vector<Interval>(std::vector<Interval>,std::vector<Interval>)>& intervalOp,
                                             const std::vector<boundVar> &);
+    Approximated<Bvec> 
+    bvec_unOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, std::vector<Interval>)> &op,
+                                                            const std::function<std::vector<Interval>(std::vector<Interval>)>& intervalOp, 
+                                                            const std::vector<boundVar> &boundVars);
 
     Config config;
 

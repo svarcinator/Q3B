@@ -184,6 +184,16 @@ Bvec Bvec::bvec_copy(const Bvec &other)
 {
     return Bvec(other);
 }
+Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& intervals,std::function<MaybeBDD(const MaybeBDD &)> fun,const Bvec &prev_bvec)
+{
+    Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
+    for (auto interval : intervals) {
+        for(size_t i = interval.second; i <= interval.first; ++i) {
+            res[i] = fun(src[i]);
+        }
+    }
+    return res;
+}
 
 Bvec Bvec::bvec_map1(const Bvec &src, std::function<MaybeBDD(const MaybeBDD &)> fun)
 {
@@ -242,7 +252,7 @@ unsigned int Bvec::count_precise_bdds(const std::vector<MaybeBDD>& bitvec)
 // return true iff nodeLimit reached
 void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval)
 {
-    while (interval.second < std::min(left.bitnum(),  interval.first)) {
+    while (interval.second < std::min(left.bitnum(),  interval.first + 1)) {
         state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
         carry = (left[interval.second] & right[interval.second]) | (carry & (left[interval.second] | right[interval.second]));
         ++interval.second;
@@ -292,7 +302,7 @@ Bvec Bvec::bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interv
 
 void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval){
 
-    while (interval.second < std::min(left.bitnum(),  interval.first)) {
+    while (interval.second < std::min(left.bitnum(),  interval.first + 1)) {
         state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
         carry = (left[interval.second] & right[interval.second] & carry) | ((~left[interval.second] & ( carry | right[interval.second])));
         ++interval.second;
@@ -430,7 +440,7 @@ void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int 
     
     Cudd &manager = check_same_cudd(*leftshift.m_manager, *right.m_manager);
 
-    while (interval.second < std::min(right.bitnum(), interval.first)) {
+    while (interval.second < std::min(right.bitnum(), interval.first + 1)) {
         if (right[interval.second].IsZero()) {
             state.preciseBdds++;
         } else {

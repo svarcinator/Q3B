@@ -97,6 +97,10 @@ class Bvec
     bvec_copy(const Bvec &other);
 
     static Bvec
+    bvec_map1_prev(const Bvec &src, const std::vector<Interval>& ,std::function<MaybeBDD(const MaybeBDD &)> fun,const Bvec &); 
+
+
+    static Bvec
     bvec_map1(const Bvec &src, std::function<MaybeBDD(const MaybeBDD &)> fun);
 
     static Bvec

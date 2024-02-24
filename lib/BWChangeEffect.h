@@ -30,6 +30,8 @@ class BWChangeEffect
     getRightmostBit(const Interval &leftChange, const Interval &rightChange);
     static std::vector<Interval> 
     EffectOnAddorSub(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
+    static std::vector<Interval>
+    EffectOnKid(const std::vector<Interval>  &kidChange);
 
 };
 #endif

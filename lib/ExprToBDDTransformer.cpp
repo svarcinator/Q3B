@@ -548,6 +548,17 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
             return getExtract(e, boundVars);
 
         } else if (decl_kind == Z3_OP_BNOT) {
+            if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+
+                auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+                if (prevBvec.has_value()){
+                    return bvec_unOpApprox(
+                    e, [&](auto x , std::vector<Interval> changeInterval ) 
+                    { return Bvec::bvec_map1_prev(x,changeInterval, [&](const MaybeBDD &a) { return !a; }, prevBvec.value().value); },
+                        [](auto x, auto y) {return BWChangeEffect::EffectOnKid(x);}, boundVars); // same effect (interval) as on child
+                }  
+            }
+             
             return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);
         } else if (decl_kind == Z3_OP_BNEG) {
             return bvec_unOp(
@@ -728,6 +739,16 @@ Approximated<Bvec> ExprToBDDTransformer::bvec_unOp(const z3::expr &e, const std:
 {
     auto result = getBvecFromExpr(e.arg(0), boundVars).Apply<Bvec>(op);
 
+    return caches.insertIntoCaches(e, result, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::bvec_unOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, std::vector<Interval>)> &op,
+                                                         const std::function<std::vector<Interval>(std::vector<Interval>)>& intervalOp, 
+                                                         const std::vector<boundVar> &boundVars)
+{
+    auto child = getBvecFromExpr(e.arg(0), boundVars);
+    auto resInterval = intervalOp(caches.findInterval(e.arg(0)));
+    auto result = child.Apply<Bvec>(op, resInterval);
     return caches.insertIntoCaches(e, result, boundVars);
 }
 

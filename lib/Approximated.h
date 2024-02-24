@@ -27,6 +27,13 @@ struct Approximated
     }
 
     template <typename TRes>
+    Approximated<TRes> Apply(const std::function<TRes(T, std::vector<Interval>)> &f, const std::vector<Interval>& interval)
+    {
+	return {f(value, interval), operationPrecision, variablePrecision};
+    }
+
+
+    template <typename TRes>
     Approximated<TRes> Apply2(const Approximated<T> &r, const std::function<TRes(T, T)> &f)
     {
 	TRes res = f(value, r.value);

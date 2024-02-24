@@ -45,5 +45,11 @@ std::vector<Interval> BWChangeEffect::EffectOnAddorSub(const std::vector<Interva
     return {{INT_MAX,rightmostChangedBit }};    // unbounded interval on left -- means from right to the left end of bitvector
 }
 
+std::vector<Interval>
+    BWChangeEffect::EffectOnKid(const std::vector<Interval>  &kidChange) {
+        return kidChange;
+    }
+    
+
 
 
