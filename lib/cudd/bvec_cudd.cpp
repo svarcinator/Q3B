@@ -141,7 +141,14 @@ Bvec Bvec::bvec_coerce(size_t bits) const
 
 Bvec Bvec::arithmetic_neg(const Bvec &src)
 {
+    // bitwise negation + 1
     return ~src + bvec_con(src.manager(), src.bitnum(), 1);
+}
+
+Bvec Bvec::arithmetic_neg_prev(const Bvec &src, std::vector<Interval> interval ,Computation_state& state)
+{
+    // bitwise negation + 1
+    return bvec_add_nodeLimit(~src, bvec_con(src.manager(), src.bitnum(), 1), INT_MAX, state);
 }
 
 bool Bvec::bvec_isConst() const

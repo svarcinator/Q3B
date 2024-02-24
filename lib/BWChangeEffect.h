@@ -33,6 +33,9 @@ class BWChangeEffect
     static std::vector<Interval>
     EffectOnKid(const std::vector<Interval>  &kidChange);
 
+    static std::vector<Interval>
+    EffectFromLeastSignChangedBit(const std::vector<Interval>  &);
+
 };
 #endif
 

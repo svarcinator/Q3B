@@ -550,8 +550,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
         } else if (decl_kind == Z3_OP_BNOT) {
             return getBNot(e, boundVars);
         } else if (decl_kind == Z3_OP_BNEG) {
-            return bvec_unOp(
-                    e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);
+            return getBNeg(e, boundVars);
+            
         } else if (decl_kind == Z3_OP_BOR) {
             return bvec_assocOp(
                     e, [&](const Bvec &a, const Bvec &b) { return a | b; }, boundVars);
@@ -867,10 +867,25 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
             boundVars); // same effect (interval) as on child
         }  
     }
-        
     return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);
-
 }
+
+Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<boundVar> &boundVars)
+{
+    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        auto prevBvecState = Caches::getstateFromBvec(prevBvec);
+        if (prevBvec.has_value()){
+            return bvec_unOpApprox( e,
+            [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::arithmetic_neg_prev(x,changeInterval, prevBvecState); },
+            [&](auto x) {return BWChangeEffect::EffectFromLeastSignChangedBit(x);}, 
+            boundVars); // same effect (interval) as on child
+        }  
+    }
+    return bvec_unOp(
+                    e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);
+}
+
 Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector<boundVar> &boundVars)
 {
     if (areOpsApproximated()  && incrementedApproxStyle == PRECISION) {

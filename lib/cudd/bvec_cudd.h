@@ -84,6 +84,9 @@ class Bvec
     static Bvec
     arithmetic_neg(const Bvec &src);
 
+    static Bvec 
+    arithmetic_neg_prev(const Bvec &, std::vector<Interval>,Computation_state& );
+
     bool
     bvec_isConst() const;
 

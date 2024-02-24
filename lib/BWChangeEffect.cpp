@@ -46,9 +46,13 @@ std::vector<Interval> BWChangeEffect::EffectOnAddorSub(const std::vector<Interva
 }
 
 std::vector<Interval>
-    BWChangeEffect::EffectOnKid(const std::vector<Interval>  &kidChange) {
-        return kidChange;
-    }
+BWChangeEffect::EffectOnKid(const std::vector<Interval>  &kidChange) {
+    return kidChange;
+}
+std::vector<Interval>
+BWChangeEffect::EffectFromLeastSignChangedBit(const std::vector<Interval>  &kidChange) {
+    return {{INT_MAX,kidChange.back().second }}; 
+}
     
 
 
