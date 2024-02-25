@@ -44,6 +44,9 @@ class BWChangeEffect
     doOverlap(const Interval& l, const Interval& r);
     static std::vector<Interval> 
     getSortedIntervals(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);
+
+    static void
+    printIntervals(const std::vector<Interval>  &interv, std::string name);
 };
 #endif
 

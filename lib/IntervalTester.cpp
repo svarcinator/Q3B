@@ -1,22 +1,19 @@
-#ifndef IntervalTester_cpp
-#define IntervalTester_cpp
+#include "IntervalTester.h"
 
-#include <vector>
-#include <utility>
+#include <iostream>
 #include <cassert>
 
-typedef std::pair<std::size_t, std::size_t> Interval;
 ////////////////////////////////
 ///// TEST INTERVAL ////////////
 ////////////////////////////////
 
-bool testIntervalPair(const Interval &interval)
+bool IntervalTester::testIntervalPair(const Interval &interval)
 {
     return interval.first >= interval.second;
 }
 
 // @pre: non empty intervals vector
-bool testIntervalsOverlap(const std::vector<Interval> &intervals)
+bool IntervalTester::testIntervalsOverlap(const std::vector<Interval> &intervals)
 {
     assert(!intervals.empty());
     if (intervals.size() == 1)
@@ -33,7 +30,7 @@ bool testIntervalsOverlap(const std::vector<Interval> &intervals)
 }
 
 // @pre: non empty intervals vector
-bool testIntervalsOrder(const std::vector<Interval> &intervals)
+bool IntervalTester::testIntervalsOrder(const std::vector<Interval> &intervals)
 {
     assert(!intervals.empty());
     if (intervals.size() == 1)
@@ -49,7 +46,17 @@ bool testIntervalsOrder(const std::vector<Interval> &intervals)
     return true;
 }
 
-bool testIntervals(const std::vector<Interval>& vec) {
+
+void printIntervals(const std::vector<Interval>  &interv, std::string name) {
+    std::cout << "Interval " << name << "= ";
+    std::cout << "[ ";
+    for (auto i : interv) {
+        std::cout << "< " << i.first << ", " << i.second << " >, ";
+    }
+    std::cout << "] " << std::endl;
+}
+
+bool IntervalTester::testIntervals(const std::vector<Interval>& vec) {
     bool res = true;
     // First test each separate interval
     for (auto i : vec) {
@@ -59,6 +66,7 @@ bool testIntervals(const std::vector<Interval>& vec) {
 
     // Right order
     res = testIntervalsOrder(vec);
+    printIntervals(vec, "pred katastrofou");
     assert(res);
 
     // Now only way that they could overlap if there would be lowest left equal to greatest right
@@ -67,4 +75,3 @@ bool testIntervals(const std::vector<Interval>& vec) {
     return res;
 }
 
-#endif

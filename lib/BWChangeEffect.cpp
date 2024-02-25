@@ -29,7 +29,7 @@ std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount)
 // tests interval on the input on basic properties
 void BWChangeEffect::AreIntervalsCorrect(const std::vector<Interval> &intervals) 
 {
-    testIntervals(intervals);
+    IntervalTester::testIntervals(intervals);
 }
 
 int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &rightChange)  {
@@ -58,7 +58,9 @@ std::vector<Interval> BWChangeEffect::getSortedIntervals(const std::vector<Inter
     std::vector<Interval> sorted;
     size_t left= 0, right =0;
     while( left + right < leftChange.size() + rightChange.size()) {
-        if (leftChange[left].second >= rightChange[right].second && left < leftChange.size()) {
+        if (right >= rightChange.size() || (( leftChange[left].first > rightChange[right].first 
+        || (leftChange[left].first == rightChange[right].first && leftChange[left].second >= rightChange[right].second) ) 
+        && left < leftChange.size())) {
             sorted.push_back(leftChange[left]);
             ++left;
         } else {
@@ -76,23 +78,36 @@ bool BWChangeEffect::doOverlap(const Interval& l, const Interval& r) {
 Interval BWChangeEffect::merge(const Interval& l, const Interval& r) {
     return {std::max(l.first, r.first) , std::min(l.second, r.second)};
 }
+void BWChangeEffect::printIntervals(const std::vector<Interval>  &interv, std::string name) {
+    std::cout << "Interval " << name << "= ";
+    std::cout << "[ ";
+    for (auto i : interv) {
+        std::cout << "< " << i.first << ", " << i.second << " >, ";
+    }
+    std::cout << "] " << std::endl;
+}
 
 std::vector<Interval>
 BWChangeEffect::EffectOfUnion(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) {
 
     auto sorted = getSortedIntervals(leftChange, rightChange);
     std::vector<Interval> merged = { sorted[0]};
-    int sorted_idx = 1;
+    size_t sorted_idx = 1;
     while(sorted_idx < sorted.size()) {
-        if (doOverlap(sorted.back(), merged.back())) {
+        if (doOverlap(sorted[sorted_idx], merged.back())) {
             merged.back() = merge(sorted[sorted_idx], merged.back());
         } else {
             merged.push_back(sorted[sorted_idx]);
         }
         sorted_idx++;
     }
-
-    
+    /*
+    printIntervals(leftChange, "leftChange");
+    printIntervals(rightChange, "rightChange");
+    printIntervals(sorted, "sorted");
+    printIntervals(merged, "merged");
+    */
+    return merged;
 }
 
 

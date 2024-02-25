@@ -211,6 +211,23 @@ Bvec Bvec::bvec_map1(const Bvec &src, std::function<MaybeBDD(const MaybeBDD &)> 
     return res;
 }
 
+Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vector<Interval>& intervals,std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun,const Bvec &prev_bvec)
+{
+    Cudd &manager = check_same_cudd(*first.m_manager, *second.m_manager);
+    Bvec res = Bvec(manager, prev_bvec.m_bitvec);
+
+    if (first.bitnum() != second.bitnum()) {
+        return res;
+    }
+
+    for (auto interval : intervals) {
+        for(size_t i = interval.second; i <= interval.first; ++i) {
+            res[i] = fun(first[i], second[i]);
+        }
+    }
+    return res;
+}
+
 Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun)
 {
     Cudd &manager = check_same_cudd(*first.m_manager, *second.m_manager);
@@ -654,6 +671,13 @@ Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right)
     auto state = Computation_state();  // fresh computation state
     return bvec_ite(val, left, right, UINT_MAX, state);
 }
+
+Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right,  Computation_state& state)
+{
+    return bvec_ite(val, left, right, UINT_MAX, state);
+}
+
+
 
 void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, Interval& interval ){
     while (interval.second < std::min(left.bitnum(), interval.first )) {

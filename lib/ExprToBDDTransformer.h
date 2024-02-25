@@ -121,6 +121,9 @@ class ExprToBDDTransformer
     Approximated<Bvec> getConst(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getBNot(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getBNeg(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getBOr(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getBAnd(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<Bvec> getBXor(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getAddition(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getSubstraction(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getConcat(const z3::expr &e, const std::vector<boundVar> &);
@@ -169,6 +172,10 @@ class ExprToBDDTransformer
                                                             const std::function<std::vector<Interval>(std::vector<Interval>)>& intervalOp, 
                                                             const std::vector<boundVar> &boundVars);
 
+    Approximated<Bvec> 
+    bvec_assocOpApprox(const z3::expr &e, const std::function<Bvec(Bvec, Bvec, std::vector<Interval>)> &op, 
+                                                                const std::function<std::vector<Interval>(std::vector<Interval>,std::vector<Interval>)>& intervalOp,
+                                                                const std::vector<boundVar> &boundVars);
     Config config;
 
     template <int n>

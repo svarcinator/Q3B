@@ -106,6 +106,9 @@ class Bvec
     static Bvec
     bvec_map1(const Bvec &src, std::function<MaybeBDD(const MaybeBDD &)> fun);
 
+    static Bvec 
+    bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vector<Interval>& intervals,std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun,const Bvec &prev_bvec);
+
     static Bvec
     bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun);
 
@@ -175,6 +178,9 @@ class Bvec
     static void
     ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int , Computation_state& , Interval&  );
 
+    static Bvec
+    bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right,  Computation_state& state);
+    
     static Bvec
     bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
 

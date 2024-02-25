@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <z3++.h>
+
 #include "Approximated.h"
 #include "cudd.h"
 #include <cuddObj.hh>

@@ -1,5 +1,5 @@
-
 #include "Caches.h"
+#include "IntervalTester.h"
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
@@ -39,6 +39,7 @@ void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state
 }
 
 void Caches::insertInterval(const z3::expr& e, const std::vector<Interval>& interval) {
+    IntervalTester::testIntervals(interval);
     intervals.insert({(Z3_ast) e,interval });
 }
 
@@ -52,6 +53,7 @@ void Caches::clearCaches()
     sameBWPreciseBvecs.clear();
     sameBWImpreciseBvecStates.clear();
     prevBWpreciseBvecs.clear();
+    intervals.clear();
 }
 // clears caches that store objest for current bitwidth and precision
 void Caches::clearCurrentBwAndPrecCaches()
@@ -67,6 +69,7 @@ void Caches::clearCurrentBwCaches()
     sameBWPreciseBdds.clear();
     sameBWPreciseBvecs.clear();
     sameBWImpreciseBvecStates.clear();
+    intervals.clear();
 }
 
 bool Caches::correctBoundVars(const std::vector<boundVar> &boundVars, const std::vector<boundVar> &cachedBoundVars) const
