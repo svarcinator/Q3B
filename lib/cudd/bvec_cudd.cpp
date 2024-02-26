@@ -195,7 +195,7 @@ Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& interval
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= interval.first; ++i) {
+        for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
             res[i] = fun(src[i]);
         }
     }
@@ -221,7 +221,7 @@ Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vect
     }
 
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= interval.first; ++i) {
+        for(size_t i = interval.second; i <= std::min(interval.first, prev_bvec.m_bitvec.size() -1 ); ++i) {
             res[i] = fun(first[i], second[i]);
         }
     }
@@ -244,10 +244,10 @@ Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeB
     return res;
 }
 // addition with use of previous results (results for previous bit width)
-Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState ) {
+Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState, unsigned int nodeLimit ) {
     
     prevState.intervals = intervals;
-    return bvec_add_nodeLimit(left, right, UINT_MAX, prevState);
+    return bvec_add_nodeLimit(left, right, nodeLimit, prevState);
 }
 Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
 {
@@ -318,10 +318,10 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     return Bvec(manager, state.bitvec);
 }
 
-Bvec Bvec::bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState ) {
+Bvec Bvec::bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState ,unsigned int nodeLimit) {
     
     prevState.intervals = intervals;
-    return bvec_sub(left, right, UINT_MAX, prevState);
+    return bvec_sub(left, right, nodeLimit, prevState);
 }
 
 void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval){

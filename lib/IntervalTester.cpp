@@ -15,8 +15,8 @@ bool IntervalTester::testIntervalPair(const Interval &interval)
 // @pre: non empty intervals vector
 bool IntervalTester::testIntervalsOverlap(const std::vector<Interval> &intervals)
 {
-    assert(!intervals.empty());
-    if (intervals.size() == 1)
+    //assert(!intervals.empty());
+    if (intervals.size() <= 1)
         return true;
 
     for (std::size_t i = 1; i < intervals.size(); ++i) {
@@ -32,8 +32,8 @@ bool IntervalTester::testIntervalsOverlap(const std::vector<Interval> &intervals
 // @pre: non empty intervals vector
 bool IntervalTester::testIntervalsOrder(const std::vector<Interval> &intervals)
 {
-    assert(!intervals.empty());
-    if (intervals.size() == 1)
+    //assert(!intervals.empty());
+    if (intervals.size() <= 1)
         return true;
 
     for (std::size_t i = 1; i < intervals.size(); ++i) {
@@ -66,7 +66,6 @@ bool IntervalTester::testIntervals(const std::vector<Interval>& vec) {
 
     // Right order
     res = testIntervalsOrder(vec);
-    printIntervals(vec, "pred katastrofou");
     assert(res);
 
     // Now only way that they could overlap if there would be lowest left equal to greatest right

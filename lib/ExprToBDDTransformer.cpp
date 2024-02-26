@@ -136,13 +136,14 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
 
     if (lastBW != variableBitWidth) {   // bitWidth changed
         incrementedApproxStyle = BIT_WIDTH;
+        caches.variableBitWidth = variableBitWidth;
         caches.setCurrentBWasPrevBW();  // coppies precise bvec, so the can be used in further computation
         caches.clearCurrentBwCaches();
         lastBW = variableBitWidth;
     } else {
         incrementedApproxStyle = PRECISION;
     }
-
+    //std::cout << caches.to_string();
     this->expression = e;
     variableApproximationHappened = false;
     auto result = getBDDFromExpr(e, {}, true, true);
@@ -496,6 +497,7 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
 Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const vector<boundVar> &boundVars)
 {
     assert(e.is_bv());
+    //std::cout << e.to_string() << std::endl;
 
     auto cachedExpr = caches.foundExprInCaches(e, boundVars);
     if (cachedExpr.has_value()) {
@@ -827,15 +829,22 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
     return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);
 }
 
-bool ExprToBDDTransformer::areOpsApproximated() const
+bool ExprToBDDTransformer::ApproximateOps() const
 {
     return (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
-            operationPrecision != 0;
+            operationPrecision != 0 && incrementedApproxStyle == OPERATIONS;
 }
+
+bool ExprToBDDTransformer::ApproximateVars() const
+{
+    return ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH);
+}
+
+
 
 bool ExprToBDDTransformer::shouldApproximateVar(const boundVar &bVar) const
 {
-    return ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) &&
+    return ( ApproximateVars() &&
             ((bVar.second == EXISTENTIAL && approximation == UNDERAPPROXIMATION) ||
                     (bVar.second == UNIVERSAL && approximation == OVERAPPROXIMATION)));
 }
@@ -860,7 +869,7 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
 Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<boundVar> &boundVars)
 {
     Bvec result(bddManager);
-    if ((config.approximationMethod == VARIABLES || config.approximationMethod == BOTH) && approximation == UNDERAPPROXIMATION) {
+    if (ApproximateVars() && approximation == UNDERAPPROXIMATION) {
         caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(e.to_string()).bitnum()) );
         std::unique_lock<std::mutex> lk(Solver::m_z3context);
         auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
@@ -871,7 +880,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
 }
 Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<boundVar> &boundVars)
 {
-    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    if (ApproximateVars()) {
 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()){
@@ -886,7 +895,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
 
 Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<boundVar> &boundVars)
 {
-    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         if (prevBvec.has_value()){
@@ -901,7 +910,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boundVar> &boundVars) {
-    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
             auto res = bvec_assocOpApprox(
@@ -917,7 +926,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boun
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getBAnd(const expr &e, const vector<boundVar> &boundVars) {
-    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
             auto res = bvec_assocOpApprox(
@@ -933,7 +942,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBAnd(const expr &e, const vector<bou
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getBXor(const expr &e, const vector<boundVar> &boundVars) {
-    if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
             auto res = bvec_assocOpApprox(
@@ -950,7 +959,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBXor(const expr &e, const vector<bou
 
 Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector<boundVar> &boundVars)
 {
-    if (areOpsApproximated()  && incrementedApproxStyle == PRECISION) {
+    if (ApproximateOps()  && incrementedApproxStyle == PRECISION) {
         auto state = caches.findStateInCaches(e, boundVars);
         bool createdFreshState = state.IsFresh();
         auto res = bvec_assocOp(
@@ -958,13 +967,14 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
         return res;
-    } else if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
+    } else if (ApproximateVars()) {
         
         auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : INT_MAX;
         
-        auto res = bvec_binaryOpApprox(
+        auto res = bvec_assocOpApprox(
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
-            { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState); },
+            { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
         return res; 
@@ -978,7 +988,7 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
 Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const vector<boundVar> &boundVars)
 {
     checkNumberOfArguments<2>(e);
-    if (areOpsApproximated()  && incrementedApproxStyle == PRECISION) {
+    if (ApproximateOps()  && incrementedApproxStyle == PRECISION) {
         auto state = caches.findStateInCaches(e, boundVars);
         bool createdFreshState = state.IsFresh();
         auto res = bvec_assocOp(
@@ -986,13 +996,14 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
         return res;
-    } else if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH)
+    } else if (ApproximateVars())
     {
         auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : INT_MAX;
         
-        auto res = bvec_binaryOpApprox(
+        auto res = bvec_assocOpApprox(
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
-            { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState); },
+            { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
         return res; 
@@ -1138,19 +1149,27 @@ Approximated<Bvec> ExprToBDDTransformer::getIte(const expr &e, const vector<boun
         auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
         auto maybeArg0 = MaybeBDD(arg0.upper);
 
-        if (areOpsApproximated()  && incrementedApproxStyle == PRECISION) {
+        if (ApproximateOps()  && incrementedApproxStyle == PRECISION) {
             auto state = caches.findStateInCaches(e, boundVars);
             bool createdFreshState = state.IsFresh();
             result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
             caches.insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, createdFreshState);
-        }else if((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH) && incrementedApproxStyle == BIT_WIDTH) {
-            auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
-            auto resInterval= BWChangeEffect::EffectOfUnion(caches.findInterval(e.arg(1)), caches.findInterval(e.arg(2)));
-            prevBvecState.intervals = resInterval;
-            result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2,  prevBvecState);
-            caches.insertInterval(e, resInterval);
-            caches.insertStateIntoCaches(e, prevBvecState, boundVars, { result, APPROXIMATED, APPROXIMATED }, true); // always creating new state that is not in state cache
-           
+        }else if(ApproximateVars()) {
+            auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+            
+            if (prevBvec.has_value()){
+                auto prevBvecState = Caches::getstateFromBvec(prevBvec);
+                auto resInterval= BWChangeEffect::EffectOfUnion(caches.findInterval(e.arg(1)), caches.findInterval(e.arg(2)));
+                prevBvecState.intervals = resInterval;
+                result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2,  prevBvecState);
+                caches.insertInterval(e, resInterval);
+                caches.insertStateIntoCaches(e, prevBvecState, boundVars, { result, APPROXIMATED, APPROXIMATED }, true); // always creating new state that is not in state cache   
+            } else {
+                result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
+                    arg1,
+                    arg2); // I'm tired, refactor later
+            }
+             
         } else {
             result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 },
                     arg1,

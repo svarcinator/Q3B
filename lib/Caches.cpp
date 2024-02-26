@@ -5,7 +5,10 @@ Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approxim
 {
     bvecExprCache.insert({ (Z3_ast) expr, { bvec, boundVars } });
 
-    if (bvec.value.isPrecise()) {
+    if (bvec.value.isPrecise()) {   //isPresise iff does not contain ? value
+        if(bvec.value.bitnum() <= variableBitWidth) {
+            //preciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });  // not correct on heapsort.i_0.smt2
+        }
         sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
     }
     return bvec;
@@ -47,8 +50,8 @@ void Caches::clearCaches()
 {
     bddExprCache.clear();
     bvecExprCache.clear();
-    preciseBdds.clear();
-    preciseBvecs.clear();
+    //preciseBdds.clear(); // never to be cleared since they are precise
+    //preciseBvecs.clear();
     sameBWPreciseBdds.clear();
     sameBWPreciseBvecs.clear();
     sameBWImpreciseBvecStates.clear();
@@ -175,5 +178,5 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
 }
 
 void Caches::setCurrentBWasPrevBW() {
-        prevBWpreciseBvecs = preciseBvecs;
+        prevBWpreciseBvecs = sameBWPreciseBvecs;
 }

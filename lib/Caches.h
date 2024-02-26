@@ -22,8 +22,11 @@ using namespace cudd;
 
 class Caches 
 {
-    public:
+    
 
+    public:
+    int variableBitWidth;
+    
     std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> preciseBdds;
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> preciseBvecs;
     // Sofar not used anywhere
@@ -63,6 +66,20 @@ class Caches
     void pruneBddCache(const std::vector<boundVar>& );
 
     void setCurrentBWasPrevBW();
+
+    std::string to_string() {
+        std::stringstream ss;
+         
+         ss << "Precise bdds size = " << preciseBdds.size() << std::endl;
+         ss << "Precise bvecs size = " << preciseBvecs.size() << std::endl;
+         ss << "prevBWpreciseBvecs bvecs size = " << prevBWpreciseBvecs.size() << std::endl;
+         ss << "sameBWPreciseBdds bvecs size = " << sameBWPreciseBdds.size() << std::endl;
+         ss << "sameBWPreciseBvecs bvecs size = " << sameBWPreciseBvecs.size() << std::endl;
+         ss << "sameBWImpreciseBvecStates bvecs size = " << sameBWImpreciseBvecStates.size() << std::endl;
+         
+
+         return ss.str();
+    }
 
 
 };

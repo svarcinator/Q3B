@@ -97,7 +97,7 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
     }
     expr = simplifier.MakeAssocOpBinary(expr);
 
-    Logger::Log("Solver (formula after simpl)", expr.to_string(), 5);
+    //Logger::Log("Solver (formula after simpl)", expr.to_string(), 5);
 
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);
@@ -394,7 +394,7 @@ Result Solver::runWithApproximations(ExprToBDDTransformer &transformer, Approxim
             return approxResult;
         }
 
-        for (int bw = 2; bw < 32; bw += 2) {
+        for (int bw = 2; bw < 32; bw += 2) {    // why up to 32? Could be 8, 16, 32, ..
             if (resultComputed)
                 return UNKNOWN;
             approxResult = runFunction(transformer, bw, 0);

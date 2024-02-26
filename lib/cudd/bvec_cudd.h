@@ -116,7 +116,7 @@ class Bvec
     get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) ;
 
     static Bvec 
-    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state & );
+    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state &, unsigned int nodeLimit );
     static Bvec
     bvec_add(const Bvec &left, const Bvec &right);
 
@@ -132,7 +132,7 @@ class Bvec
     sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval);
 
     static Bvec 
-    bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState );
+    bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState, unsigned int nodeLimit );
     static Bvec
     bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit);
 

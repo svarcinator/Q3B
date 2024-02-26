@@ -136,7 +136,8 @@ class ExprToBDDTransformer
     // helper funcs
 
     Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
-    bool areOpsApproximated() const;
+    bool ApproximateOps() const;
+    bool ApproximateVars() const;
     bool shouldApproximateVar(const boundVar& bVar) const;
     unsigned int getNumeralValue(const z3::expr &) const;
     Bvec getNumeralBvec(const z3::expr &);
