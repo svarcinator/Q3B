@@ -53,6 +53,21 @@ class BWChangeEffect
 
     static void
     printIntervals(const std::vector<Interval>  &interv, std::string name);
+
+    static bool
+    checkRightBound(const Interval& interval);
+
+    static std::vector<Interval>
+    ShiftRight(const std::vector<Interval>&  , unsigned int );
+
+    static bool 
+    checkRightBound(const Interval& interval, unsigned int bound);
+
+    static std::vector<Interval>
+    CropInterval(const std::vector<Interval>&  , unsigned int );
+
+    static std::vector<Interval>
+    EffectOnExtract(const std::vector<Interval>  &childChange, int rightshift, int highest_index) ;  
 };
 #endif
 

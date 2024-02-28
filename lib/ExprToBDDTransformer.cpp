@@ -978,9 +978,7 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
         return res; 
-        
     }
-
     return bvec_assocOp(
             e, [&](auto x, auto y) { return x + y; }, boundVars);
 }
@@ -1012,68 +1010,75 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
             e, [](auto x, auto y) { return x - y; }, boundVars);
 }
 
-Approximated<Bvec> ExprToBDDTransformer::getConcatApproximated(const expr &e, const vector<boundVar> &boundVars, const Approximated<Bvec>& prevBvec) {
-    Bvec currentBvec = prevBvec.value;
-    Precision opPrecision = prevBvec.operationPrecision;
-    Precision varPrecision = prevBvec.variablePrecision;
-    int offset = 0;
-    func_decl f = e.decl();
-    int newSize = f.range().bv_size();
-    std::vector<Interval> currentInterval = {{}};    // nothing to recompte
-    for (int i = e.num_args() - 1; i >= 0; i--) {
-        auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);
-        auto kidInterval = caches.findInterval(e.arg(i));
-        currentInterval = BWChangeEffect::EffectOnConcat(currentInterval, kidInterval, offset);
-        currentBvec = Bvec::bvec_map2_prev(currentBvec,
-                arg.bvec_coerce(newSize) << offset, currentInterval,
-                [&](const MaybeBDD &a, const MaybeBDD &b) { return b; }, currentBvec); // I think it should be enough to put just b there
-        opPrecision = opPrecision && argOpPrecision;
-        varPrecision = varPrecision && argVarPrecision;
-        offset += f.domain(i).bv_size();
+Approximated<Bvec>  ExprToBDDTransformer::getCurrentBvec(const expr &e, const vector<boundVar> &boundVars, int newSize, bool& wasCurrentCached) {
+    if (ApproximateVars() && incrementedApproxStyle == PRECISION){
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        if ( prevBvec.has_value() ) {
+            wasCurrentCached = true;
+            return prevBvec.value();
+        }
     }
-    return caches.insertIntoCaches(e, { currentBvec, opPrecision, varPrecision }, boundVars);
-
-}
-
-Approximated<Bvec> ExprToBDDTransformer::getCurrentBvec(const expr &e, const vector<boundVar> &boundVars, int newSize) {
-    auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-    if ( prevBvec.has_value() ) {
-        //return prevBvec.value();
-    }
+    wasCurrentCached = false;
     return {Bvec::bvec_false(bddManager, newSize), PRECISE, PRECISE};
 }
 
-Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<boundVar> &boundVars)
-{
-    
-    /*
-    if (ApproximateVars() && incrementedApproxStyle == PRECISION) {
-        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+Bvec ExprToBDDTransformer::computeConcat(const expr &expr_arg,Bvec currentBvec, Bvec arg, int offset, int newSize, bool wasCurrentCached, std::vector<Interval>& currentInterval ) {
+    if(wasCurrentCached) {
+        auto kidInterval = caches.findInterval(expr_arg);
+        currentInterval = BWChangeEffect::EffectOnConcat(currentInterval, kidInterval, offset);
+        currentBvec = Bvec::bvec_map2_prev(currentBvec,
+                arg.bvec_coerce(newSize) << offset, currentInterval,
+                [&](const MaybeBDD &a, const MaybeBDD &b) { return b; }, currentBvec);  
+    } else {
         
-        if (prevBvec.has_value()) {
-            return getConcatApproximated(e, boundVars, prevBvec.value());
-        } 
-        
+        currentBvec = Bvec::bvec_map2(currentBvec,
+                arg.bvec_coerce(newSize) << offset,
+                [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; });
     }
-    */ 
+    return currentBvec;
+}
 
+
+Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<boundVar> &boundVars )
+{
     func_decl f = e.decl();
     unsigned num = e.num_args();
     int newSize = f.range().bv_size();
     int offset = 0;
-
-    auto  [currentBvec, opPrecision, varPrecision] = getCurrentBvec(e, boundVars, newSize);
+    std::vector<Interval> currentInterval = {{}};    // nothing to recompte
+    bool wasCurrentCached;
+    auto  [currentBvec, opPrecision, varPrecision] = getCurrentBvec(e, boundVars, newSize, wasCurrentCached);  
     assert(num > 0);
     for (int i = num - 1; i >= 0; i--) {
         auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);
-        currentBvec = Bvec::bvec_map2(currentBvec,
-                arg.bvec_coerce(newSize) << offset,
-                [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; });
+        currentBvec = computeConcat( e.arg(i),currentBvec,  arg,  offset,  newSize,  wasCurrentCached,  currentInterval);
         opPrecision = opPrecision && argOpPrecision;
         varPrecision = varPrecision && argVarPrecision;
         offset += f.domain(i).bv_size();
     }
     return caches.insertIntoCaches(e, { currentBvec, opPrecision, varPrecision }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vector<boundVar> &boundVars, int bitFrom,int extractBits ) 
+{
+    if (ApproximateVars() && incrementedApproxStyle == PRECISION){ 
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        auto prevBvecState = Caches::getstateFromBvec(prevBvec);
+        if (prevBvec.has_value()) {
+            return bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
+            { return Bvec::bvec_extract(x, changeInterval,  bitFrom, prevBvec.value().value); },
+              [&](auto x) {return BWChangeEffect::EffectOnExtract(x,bitFrom, extractBits );},boundVars);
+        }
+            
+    } 
+    return bvec_unOp(
+            e,
+            [&](auto x) { return x
+                                  .bvec_shrfixed(bitFrom, MaybeBDD(bddManager.bddZero()))
+                                  .bvec_coerce(extractBits); },
+            boundVars);
+
+
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getExtract(const expr &e, const vector<boundVar> &boundVars)
@@ -1082,12 +1087,7 @@ Approximated<Bvec> ExprToBDDTransformer::getExtract(const expr &e, const vector<
     int bitTo = Z3_get_decl_int_parameter(*context, z3decl, 0);
     int bitFrom = Z3_get_decl_int_parameter(*context, z3decl, 1);
     int extractBits = bitTo - bitFrom + 1;
-    return bvec_unOp(
-            e,
-            [&](auto x) { return x
-                                  .bvec_shrfixed(bitFrom, MaybeBDD(bddManager.bddZero()))
-                                  .bvec_coerce(extractBits); },
-            boundVars);
+    return getExtractBvec(e, boundVars, bitFrom, extractBits);
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boundVar> &boundVars)

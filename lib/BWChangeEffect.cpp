@@ -74,6 +74,23 @@ BWChangeEffect::ShiftLeft(const std::vector<Interval>& intervals , unsigned int 
     }
     return intervals_copy;
 }
+bool BWChangeEffect::checkRightBound(const Interval& interval) {
+    return interval.first >= 0 && interval.second >= 0;
+}
+std::vector<Interval>
+BWChangeEffect::ShiftRight(const std::vector<Interval>& intervals , unsigned int offset) {
+    auto intervals_copy = std::vector<Interval>();
+    for (Interval interval : intervals) {
+        // shift right
+        interval.first -= offset;
+        interval.second = (interval.second == INT_MAX) ? interval.second : interval.second - offset;
+        //check bounds
+        if (checkRightBound(interval)) {
+            intervals_copy.push_back(interval);
+        }
+    }
+    return intervals_copy;
+}
 
 std::vector<Interval>
 BWChangeEffect::EffectOnConcat(const std::vector<Interval>& current, const std::vector<Interval>& arg , unsigned int offset) {
@@ -139,6 +156,28 @@ BWChangeEffect::EffectOfUnion(const std::vector<Interval>  &leftChange, const st
     printIntervals(merged, "merged");
     */
     return merged;
+}
+
+bool BWChangeEffect::checkRightBound(const Interval& interval, unsigned int bound) {
+    return interval.first <= bound;
+}
+
+std::vector<Interval>
+BWChangeEffect::CropInterval(const std::vector<Interval>& intervals , unsigned int highest_bit) {
+    auto intervals_copy = std::vector<Interval>();
+    for (auto i : intervals) {
+        if (checkRightBound(i, highest_bit)) {
+            intervals_copy.push_back(i);
+        }
+    }
+    return intervals_copy;
+}
+
+std::vector<Interval>
+BWChangeEffect::EffectOnExtract(const std::vector<Interval>  &childChange, int rightshift, int highest_index) {
+    auto shifted = ShiftRight(childChange, rightshift);
+    auto cropped = CropInterval(shifted, highest_index);
+    return cropped;
 }
 
 
