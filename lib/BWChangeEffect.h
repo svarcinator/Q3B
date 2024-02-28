@@ -35,6 +35,12 @@ class BWChangeEffect
 
     static std::vector<Interval>
     EffectFromLeastSignChangedBit(const std::vector<Interval>  &);
+
+    static std::vector<Interval>
+    ShiftLeft(const std::vector<Interval>  & , unsigned int);
+
+    static std::vector<Interval>
+    EffectOnConcat(const std::vector<Interval>& current, const std::vector<Interval>& arg,  unsigned int offset );
     
     static std::vector<Interval>
     EffectOfUnion(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange);

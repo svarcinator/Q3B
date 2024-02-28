@@ -1012,17 +1012,57 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
             e, [](auto x, auto y) { return x - y; }, boundVars);
 }
 
+Approximated<Bvec> ExprToBDDTransformer::getConcatApproximated(const expr &e, const vector<boundVar> &boundVars, const Approximated<Bvec>& prevBvec) {
+    Bvec currentBvec = prevBvec.value;
+    Precision opPrecision = prevBvec.operationPrecision;
+    Precision varPrecision = prevBvec.variablePrecision;
+    int offset = 0;
+    func_decl f = e.decl();
+    int newSize = f.range().bv_size();
+    std::vector<Interval> currentInterval = {{}};    // nothing to recompte
+    for (int i = e.num_args() - 1; i >= 0; i--) {
+        auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);
+        auto kidInterval = caches.findInterval(e.arg(i));
+        currentInterval = BWChangeEffect::EffectOnConcat(currentInterval, kidInterval, offset);
+        currentBvec = Bvec::bvec_map2_prev(currentBvec,
+                arg.bvec_coerce(newSize) << offset, currentInterval,
+                [&](const MaybeBDD &a, const MaybeBDD &b) { return b; }, currentBvec); // I think it should be enough to put just b there
+        opPrecision = opPrecision && argOpPrecision;
+        varPrecision = varPrecision && argVarPrecision;
+        offset += f.domain(i).bv_size();
+    }
+    return caches.insertIntoCaches(e, { currentBvec, opPrecision, varPrecision }, boundVars);
+
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getCurrentBvec(const expr &e, const vector<boundVar> &boundVars, int newSize) {
+    auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+    if ( prevBvec.has_value() ) {
+        //return prevBvec.value();
+    }
+    return {Bvec::bvec_false(bddManager, newSize), PRECISE, PRECISE};
+}
+
 Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<boundVar> &boundVars)
 {
+    
+    /*
+    if (ApproximateVars() && incrementedApproxStyle == PRECISION) {
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        
+        if (prevBvec.has_value()) {
+            return getConcatApproximated(e, boundVars, prevBvec.value());
+        } 
+        
+    }
+    */ 
+
     func_decl f = e.decl();
     unsigned num = e.num_args();
     int newSize = f.range().bv_size();
     int offset = 0;
 
-    auto currentBvec = Bvec::bvec_false(bddManager, newSize);
-    Precision opPrecision = PRECISE;
-    Precision varPrecision = PRECISE;
-
+    auto  [currentBvec, opPrecision, varPrecision] = getCurrentBvec(e, boundVars, newSize);
     assert(num > 0);
     for (int i = num - 1; i >= 0; i--) {
         auto [arg, argOpPrecision, argVarPrecision] = getBvecFromExpr(e.arg(i), boundVars);

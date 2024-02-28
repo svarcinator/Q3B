@@ -133,8 +133,10 @@ class ExprToBDDTransformer
     Approximated<Bvec> getSignedDivRem(const z3::expr &e, const std::vector<boundVar> &boundVars, z3::expr (*op)( const z3::expr &e1, const z3::expr &e2));
     Approximated<Bvec> getIte(const z3::expr &e, const std::vector<boundVar> &);
 
-    // helper funcs
+    Approximated<Bvec> getConcatApproximated(const z3::expr &e, const std::vector<boundVar> &boundVars, const Approximated<Bvec>&);
 
+    // helper funcs
+    Approximated<Bvec> getCurrentBvec(const z3::expr &e, const std::vector<boundVar> &boundVars, int)  ;
     Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
     bool ApproximateOps() const;
     bool ApproximateVars() const;

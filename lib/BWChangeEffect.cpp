@@ -64,6 +64,23 @@ BWChangeEffect::EffectFromLeastSignChangedBit(const std::vector<Interval>  &kidC
     return {{INT_MAX,kidChange.back().second }}; 
 }
 
+
+std::vector<Interval>
+BWChangeEffect::ShiftLeft(const std::vector<Interval>& intervals , unsigned int offset) {
+    std::vector<Interval> intervals_copy = intervals;
+    for (Interval& interval : intervals_copy) {
+        interval.first += offset;
+        interval.second = (interval.second == INT_MAX) ? interval.second : interval.second + offset;
+    }
+    return intervals_copy;
+}
+
+std::vector<Interval>
+BWChangeEffect::EffectOnConcat(const std::vector<Interval>& current, const std::vector<Interval>& arg , unsigned int offset) {
+    auto shiftedArg = ShiftLeft(arg, offset);
+    return EffectOfUnion(current, shiftedArg); 
+}
+
 std::vector<Interval> BWChangeEffect::getSortedIntervals(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) {
     std::vector<Interval> sorted;
     size_t left= 0, right =0;
