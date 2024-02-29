@@ -837,6 +837,26 @@ bool ExprToBDDTransformer::shouldApproximateVar(const boundVar &bVar) const
                     (bVar.second == UNIVERSAL && approximation == OVERAPPROXIMATION)));
 }
 
+
+// num is positive iff shift left (if negative, then shift right)
+Approximated<Bvec> ExprToBDDTransformer::shiftNumeral(const expr &e, const vector<boundVar> &boundVars, int num) {
+    if (ApproximateVars()){
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        if (prevBvec.has_value()) {
+            return bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
+            { return Bvec::bvec_update_shifted(x, changeInterval,  num, prevBvec.value().value); },
+              [&](auto x) {return BWChangeEffect::EffectOfShift(x, num );},boundVars);
+        }
+    }
+    if (num >= 0) {
+		return bvec_unOp(
+                e, [&](auto x) { return x << num ; }, boundVars);
+	} else {
+		return bvec_unOp(
+            e, [&](auto x) { return x >> -num; }, boundVars);
+	}
+}
+
 ///////////////////////////  Functions called in ExprToBDDTransformer::getBvecFromExpr /////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -867,15 +887,11 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
     return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
 }
 
-// num is positive iff shift left (if negative, then shift right)
-Approximated<Bvec> ExprToBDDTransformer::shiftNumeral(const expr &e, const vector<boundVar> &boundVars, int num) {
-    
-}
+
 
 Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vector<boundVar> &boundVars){
     if (e.arg(1).is_numeral()) {
-        return bvec_unOp(
-                e, [&](auto x) { return x << getNumeralValue(e.arg(1)); }, boundVars);
+        shiftNumeral(e, boundVars, getNumeralValue(e.arg(1)));
     } else {
         return bvec_binOp(
                 e, [](auto x, auto y) { return x << y; }, boundVars);
@@ -884,8 +900,7 @@ Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vecto
 
 Approximated<Bvec> ExprToBDDTransformer::getShiftRight(const expr &e, const vector<boundVar> &boundVars){
     if (e.arg(1).is_numeral()) {
-         return bvec_unOp(
-            e, [&](auto x) { return x >> getNumeralValue(e.arg(1)); }, boundVars);
+         shiftNumeral(e, boundVars, -getNumeralValue(e.arg(1)));
     } else {
         return bvec_binOp(
                 e, [](auto x, auto y) { return x >> y; }, boundVars);
@@ -1081,7 +1096,7 @@ Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vec
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         if (prevBvec.has_value()) {
             return bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
-            { return Bvec::bvec_extract(x, changeInterval,  bitFrom, prevBvec.value().value); },
+            { return Bvec::bvec_update_shifted(x, changeInterval,  bitFrom, prevBvec.value().value); },
               [&](auto x) {return BWChangeEffect::EffectOnExtract(x,bitFrom, extractBits );},boundVars);
         }
             

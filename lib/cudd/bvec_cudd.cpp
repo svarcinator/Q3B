@@ -192,12 +192,12 @@ Bvec Bvec::bvec_copy(const Bvec &other)
     return Bvec(other);
 }
 
-Bvec Bvec::bvec_extract(const Bvec &src, const std::vector<Interval>& intervals, unsigned int rightshift, const Bvec &prev_bvec)
+Bvec Bvec::bvec_update_shifted(const Bvec &src, const std::vector<Interval>& intervals, unsigned int shift, const Bvec &prev_bvec)
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
         for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
-            res[i] = src[i + rightshift];    // test this
+            res[i] = src[i + shift];    // test this
         }
     }
     return res;

@@ -180,5 +180,17 @@ BWChangeEffect::EffectOnExtract(const std::vector<Interval>  &childChange, int r
     return cropped;
 }
 
+// shift >= 0 -> shiftleft else shiftright
+std::vector<Interval>
+BWChangeEffect::EffectOfShift(const std::vector<Interval>  &childChange, int shift) {
+    std::vector<Interval> shifted;
+    if (shift >= 0) {
+        shifted = ShiftLeft(childChange, shift);
+    }
+    shifted = ShiftRight(childChange, -shift);
+
+    return shifted;
+}
+
 
 

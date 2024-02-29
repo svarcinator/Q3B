@@ -100,7 +100,7 @@ class Bvec
     bvec_copy(const Bvec &other);
 
     static Bvec 
-    bvec_extract(const Bvec &src, const std::vector<Interval>& , unsigned int , const Bvec &);
+    bvec_update_shifted(const Bvec &src, const std::vector<Interval>& , unsigned int , const Bvec &);
 
     static Bvec
     bvec_map1_prev(const Bvec &src, const std::vector<Interval>& ,std::function<MaybeBDD(const MaybeBDD &)> fun,const Bvec &); 

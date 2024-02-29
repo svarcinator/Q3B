@@ -68,6 +68,9 @@ class BWChangeEffect
 
     static std::vector<Interval>
     EffectOnExtract(const std::vector<Interval>  &childChange, int rightshift, int highest_index) ;  
+
+    static std::vector<Interval>
+    EffectOfShift(const std::vector<Interval>  &childChange, int shift);
 };
 #endif
 
