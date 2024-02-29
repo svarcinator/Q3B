@@ -3,13 +3,14 @@
 #include "ExpensiveOp.h"
 #include "HexHelper.h"
 #include "Solver.h"
+#include "BvecTester.h"
 
 #include <algorithm>
 #include <cmath>
 #include <list>
 #include <sstream>
 
-#define DEBUG false
+#define DEBUG true
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -143,7 +144,7 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     } else {
         incrementedApproxStyle = PRECISION;
     }
-    //std::cout << caches.to_string();
+    std::cout << caches.to_string();
     this->expression = e;
     variableApproximationHappened = false;
     auto result = getBDDFromExpr(e, {}, true, true);
@@ -497,7 +498,10 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
 Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const vector<boundVar> &boundVars)
 {
     assert(e.is_bv());
-    //std::cout << e.to_string() << std::endl;
+    if (DEBUG) {
+        std::cout << e.to_string() << std::endl;
+    }
+    
 
     auto cachedExpr = caches.foundExprInCaches(e, boundVars);
     if (cachedExpr.has_value()) {
@@ -891,7 +895,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
 
 Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vector<boundVar> &boundVars){
     if (e.arg(1).is_numeral()) {
-        shiftNumeral(e, boundVars, getNumeralValue(e.arg(1)));
+        return shiftNumeral(e, boundVars, getNumeralValue(e.arg(1)));
     } else {
         return bvec_binOp(
                 e, [](auto x, auto y) { return x << y; }, boundVars);
@@ -900,7 +904,7 @@ Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vecto
 
 Approximated<Bvec> ExprToBDDTransformer::getShiftRight(const expr &e, const vector<boundVar> &boundVars){
     if (e.arg(1).is_numeral()) {
-         shiftNumeral(e, boundVars, -getNumeralValue(e.arg(1)));
+         return shiftNumeral(e, boundVars, -getNumeralValue(e.arg(1)));
     } else {
         return bvec_binOp(
                 e, [](auto x, auto y) { return x >> y; }, boundVars);
@@ -929,10 +933,14 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         if (prevBvec.has_value()){
-            return bvec_unOpApprox( e,
+            auto result =  bvec_unOpApprox( e,
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::arithmetic_neg_prev(x,changeInterval, prevBvecState); },
             [&](auto x) {return BWChangeEffect::EffectFromLeastSignChangedBit(x);}, 
             boundVars); 
+            if (DEBUG) {
+
+            }
+            return result;
         }  
     }
     return bvec_unOp(
@@ -1007,6 +1015,11 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
             { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
+        if (DEBUG) {
+            BvecTester::testAddOrSub(res, bvec_assocOp(
+            e, [&](auto x, auto y) { return x + y; }, boundVars), prevBvecState);
+
+        }
         return res; 
     }
     return bvec_assocOp(
@@ -1034,6 +1047,10 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
             { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
+        if (DEBUG) {
+            BvecTester::testAddOrSub(res, bvec_assocOp(
+            e, [&](auto x, auto y) { return x + y; }, boundVars), prevBvecState);
+        }
         return res; 
     }
     return bvec_binOp(

@@ -6,6 +6,9 @@
 #include <iostream>
 #include <mutex>
 
+
+#define DEBUG true
+
 using namespace z3;
 
 
@@ -188,6 +191,9 @@ BWChangeEffect::EffectOfShift(const std::vector<Interval>  &childChange, int shi
         shifted = ShiftLeft(childChange, shift);
     }
     shifted = ShiftRight(childChange, -shift);
+    if (DEBUG) {
+        AreIntervalsCorrect(shifted);
+    }
 
     return shifted;
 }
