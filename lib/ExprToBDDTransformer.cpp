@@ -520,21 +520,9 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
         } else if (decl_kind == Z3_OP_BSUB) {
             return getSubstraction(e, boundVars);
         } else if (decl_kind == Z3_OP_BSHL) {
-            if (e.arg(1).is_numeral()) {
-                return bvec_unOp(
-                        e, [&](auto x) { return x << getNumeralValue(e.arg(1)); }, boundVars);
-            } else {
-                return bvec_binOp(
-                        e, [](auto x, auto y) { return x << y; }, boundVars);
-            }
+            return getShiftLeft(e, boundVars);
         } else if (decl_kind == Z3_OP_BLSHR) {
-            if (e.arg(1).is_numeral()) {
-                return bvec_unOp(
-                        e, [&](auto x) { return x >> getNumeralValue(e.arg(1)); }, boundVars);
-            } else {
-                return bvec_binOp(
-                        e, [](auto x, auto y) { return x >> y; }, boundVars);
-            }
+            return getShiftRight(e, boundVars);
         } else if (decl_kind == Z3_OP_BASHR) {
             auto bitwidth = e.get_sort().bv_size();
             if (e.arg(1).is_numeral()) {
@@ -878,6 +866,28 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
     std::unique_lock<std::mutex> lk(Solver::m_z3context);
     return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
 }
+
+Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vector<boundVar> &boundVars){
+    if (e.arg(1).is_numeral()) {
+        return bvec_unOp(
+                e, [&](auto x) { return x << getNumeralValue(e.arg(1)); }, boundVars);
+    } else {
+        return bvec_binOp(
+                e, [](auto x, auto y) { return x << y; }, boundVars);
+    }
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getShiftRight(const expr &e, const vector<boundVar> &boundVars){
+    if (e.arg(1).is_numeral()) {
+         return bvec_unOp(
+            e, [&](auto x) { return x >> getNumeralValue(e.arg(1)); }, boundVars);
+    } else {
+        return bvec_binOp(
+                e, [](auto x, auto y) { return x >> y; }, boundVars);
+    }
+}
+
+
 Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<boundVar> &boundVars)
 {
     if (ApproximateVars()) {

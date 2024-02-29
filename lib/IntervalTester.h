@@ -8,6 +8,12 @@ class IntervalTester {
 public:
 
     static bool 
+    testNotNegative(const Interval &interval);
+
+    static bool 
+    testNotNegative(const std::vector<Interval> &intervals);
+
+    static bool 
     testIntervalPair(const Interval &interval);
 
     static bool 

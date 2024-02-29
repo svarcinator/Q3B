@@ -6,6 +6,19 @@
 ////////////////////////////////
 ///// TEST INTERVAL ////////////
 ////////////////////////////////
+bool IntervalTester::testNotNegative(const Interval &interval) {
+    return interval.second >= 0 && interval.first >= 0;
+}
+
+bool IntervalTester::testNotNegative(const std::vector<Interval> &intervals) {
+    for (const Interval& interval: intervals) {
+        if (!testNotNegative(interval) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 bool IntervalTester::testIntervalPair(const Interval &interval)
 {
@@ -63,6 +76,10 @@ bool IntervalTester::testIntervals(const std::vector<Interval>& vec) {
         res = testIntervalPair(i);
         assert(res);
     }
+
+    // Onl positive indices in interval
+    res = testNotNegative(vec);
+    assert(res);
 
     // Right order
     res = testIntervalsOrder(vec);
