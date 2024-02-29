@@ -350,6 +350,7 @@ Result Solver::runWithApproximations(ExprToBDDTransformer &transformer, Approxim
                 }
 
                 approxResult = runFunction(transformer, -1, prec);
+                
                 if (approxResult != UNKNOWN) {
                     return approxResult;
                 }

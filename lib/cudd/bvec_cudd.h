@@ -119,7 +119,7 @@ class Bvec
     get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) ;
 
     static Bvec 
-    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state &, unsigned int nodeLimit );
+    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state , unsigned int nodeLimit );
     static Bvec
     bvec_add(const Bvec &left, const Bvec &right);
 

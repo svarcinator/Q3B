@@ -256,7 +256,7 @@ Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeB
     return res;
 }
 // addition with use of previous results (results for previous bit width)
-Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state &prevState, unsigned int nodeLimit ) {
+Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> intervals, Computation_state prevState, unsigned int nodeLimit ) {
     
     prevState.intervals = intervals;
     return bvec_add_nodeLimit(left, right, nodeLimit, prevState);

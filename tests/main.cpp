@@ -333,6 +333,32 @@ Result SolveParallelAndGoalUnconstrainedLazy(std::string filename)
     return interpreter.Run(tree->script());
 }
 
+Result SolveWithAllApproxLazy(std::string filename,  int precision = 0)
+{
+    std::cout << "Both approx: " << filename << std::endl;
+    Config config;
+    config.propagateUnconstrained = true;
+    config.approximationMethod = BOTH;
+    config.checkModels = true;
+    config.lazyEvaluation = true;
+    config.approximations = ALL_APPROXIMATIONS;
+    config.precision = precision;
+
+    std::ifstream stream;
+    stream.open(filename);
+
+    ANTLRInputStream input(stream);
+    SMTLIBv2Lexer lexer(&input);
+    CommonTokenStream tokens(&lexer);
+    SMTLIBv2Parser parser{&tokens};
+
+    SMTLIBv2Parser::StartContext* tree = parser.start();
+
+    SMTLIBInterpreter interpreter;
+    interpreter.SetConfig(config);
+    return interpreter.Run(tree->script());
+}
+
 TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
 {
     REQUIRE( SolveWithoutApprox("../tests/data/AR-fixpoint-1.smt2") == UNSAT );
@@ -342,6 +368,17 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/vsl.proof-node1722.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithoutApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
+    
+    
+    REQUIRE( SolveWithoutApproxLazy("../tests/data/AR-fixpoint-1.smt2") == UNSAT );
+    REQUIRE( SolveWithoutApproxLazy("../tests/problematic/188.smt2") == SAT );
+    REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/188.smt2", OVERAPPROXIMATION) == SAT );
+    REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/188.smt2", UNDERAPPROXIMATION) == SAT );
+    REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/vsl.proof-node1722.smt2", OVERAPPROXIMATION) == UNSAT );
+    REQUIRE( SolveWithAllApproxLazy("../tests/problematic/vsl.proof-node1722.smt2") == UNSAT );
+    REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
+    REQUIRE( SolveWithoutApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
+    
    
 }
 

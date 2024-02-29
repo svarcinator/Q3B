@@ -23,3 +23,17 @@ bool BvecTester::testAddOrSub(const Approximated<cudd::Bvec>& approxResult,const
     assert(areEq.IsOne());
     return true;
 }
+
+bool BvecTester::testBvecEq(const Approximated<cudd::Bvec>& approxResult,const Approximated<cudd::Bvec>& orig ) {
+    auto areEq = approxResult.value == orig.value;
+    if (!areEq.IsOne()) {
+        std::cout << "Are zero then? " << areEq.IsZero() << std::endl;
+        // manually go through bvecs
+        auto origState = Computation_state(orig.value.m_bitvec);
+        auto resultState = Computation_state(approxResult.value.m_bitvec);
+        std::cout << "Orig:  " << origState.toString(); 
+        std::cout << "Approximated result:  " << resultState.toString(); 
+    }
+    assert(areEq.IsOne());
+    return true;
+}

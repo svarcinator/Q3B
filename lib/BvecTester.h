@@ -24,4 +24,7 @@ public:
     static bool 
     testAddOrSub(const Approximated<cudd::Bvec>& approxResult,const Approximated<cudd::Bvec>& orig, const Computation_state& approxResultState);
 
+    static bool 
+    testBvecEq(const Approximated<cudd::Bvec>& approxResult,const Approximated<cudd::Bvec>& orig );
+
 };
