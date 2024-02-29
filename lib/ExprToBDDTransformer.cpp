@@ -867,6 +867,11 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
     return caches.insertIntoCaches(e, { vars.at(e.to_string()), PRECISE }, boundVars);
 }
 
+// num is positive iff shift left (if negative, then shift right)
+Approximated<Bvec> ExprToBDDTransformer::shiftNumeral(const expr &e, const vector<boundVar> &boundVars, int num) {
+    
+}
+
 Approximated<Bvec> ExprToBDDTransformer::getShiftLeft(const expr &e, const vector<boundVar> &boundVars){
     if (e.arg(1).is_numeral()) {
         return bvec_unOp(
