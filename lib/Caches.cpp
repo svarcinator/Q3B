@@ -1,6 +1,9 @@
 #include "Caches.h"
 #include "IntervalTester.h"
 
+
+#define DEBUG false
+
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
     bvecExprCache.insert({ (Z3_ast) expr, { bvec, boundVars } });
@@ -42,7 +45,10 @@ void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state
 }
 
 void Caches::insertInterval(const z3::expr& e, const std::vector<Interval>& interval) {
-    IntervalTester::testIntervals(interval);
+    if(DEBUG){
+        IntervalTester::testIntervals(interval);
+    }
+    
     intervals.insert({(Z3_ast) e,interval });
 }
 

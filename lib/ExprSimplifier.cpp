@@ -12,7 +12,7 @@
 
 
 
-#define DEBUG false
+#define DEBUG true
 
 using namespace z3;
 
@@ -988,7 +988,7 @@ expr ExprSimplifier::MakeBinary( expr_vector& arguments, ExpensiveOp& exprInform
 expr ExprSimplifier::MakeAssocOpBinary( const expr &e) 
 {
     ExpensiveOp exprInformation;
-    std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BMUL};
+    std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BMUL, Z3_OP_BOR, Z3_OP_BAND, Z3_OP_BXOR};
     return  ExprWalk(e, declKinds,exprInformation, [this]( expr_vector& a, ExpensiveOp& b, func_decl c){return this->MakeBinary(a, b, c);} );
     
 }

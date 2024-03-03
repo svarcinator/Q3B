@@ -162,7 +162,7 @@ class ExprToBDDTransformer
 
     
 
-    bool variableApproximationHappened = false;
+    //bool variableApproximationHappened = false;
     bool operationApproximationHappened = false;
 
     int cacheHits = 0;
@@ -213,7 +213,7 @@ class ExprToBDDTransformer
     {
         approximationType = at;
     }
-
+    /*
     bool IsPreciseResult()
     {
         return !variableApproximationHappened && !operationApproximationHappened;
@@ -223,11 +223,12 @@ class ExprToBDDTransformer
     {
         return variableApproximationHappened;
     }
-
+    */
     bool OperationApproximationHappened()
     {
         return operationApproximationHappened;
     }
+    
 
     void configureReorder()
     {

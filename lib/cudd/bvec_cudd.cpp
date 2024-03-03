@@ -207,6 +207,7 @@ Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& interval
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
+        std::cout << "Interval in bvec_map1_prev first = " << interval.first << " second = " << interval.second <<std::endl;  
         for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
             res[i] = fun(src[i]);
         }

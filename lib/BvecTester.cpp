@@ -19,12 +19,12 @@ bool BvecTester::testAddOrSub(const Approximated<cudd::Bvec>& approxResult,const
         std::cout << "Orig:  " << origState.toString(); 
         std::cout << "Approximated result:  " << resultState.toString(); 
         std::cout << "Inserted approximated result:  " << approxResultState.toString();
-        for(int i = 0; i < orig.value.m_bitvec.size(); ++i ) {
+        for(size_t i = 0; i < orig.value.m_bitvec.size(); ++i ) {
             bool areEq = orig.value.m_bitvec[i].Equals(approxResult.value.m_bitvec[i]);
             std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
         }
     }
-    //assert(areEq.IsOne());
+    assert(areEq.IsOne());
     return true;
 }
 
@@ -37,6 +37,10 @@ bool BvecTester::testBvecEq(const Approximated<cudd::Bvec>& approxResult,const A
         auto resultState = Computation_state(approxResult.value.m_bitvec);
         std::cout << "Orig:  " << origState.toString(); 
         std::cout << "Approximated result:  " << resultState.toString(); 
+        for(size_t i = 0; i < orig.value.m_bitvec.size(); ++i ) {
+            bool areEq = orig.value.m_bitvec[i].Equals(approxResult.value.m_bitvec[i]);
+            std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
+        }
     }
     assert(areEq.IsOne());
     return true;

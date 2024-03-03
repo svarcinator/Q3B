@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
             if (optionString == "over") config.approximations = ONLY_OVERAPPROXIMATIONS;
             else if (optionString == "under") config.approximations = ONLY_UNDERAPPROXIMATIONS;
             else if (optionString == "all") config.approximations = ALL_APPROXIMATIONS;
+			else if (optionString == "none") config.approximations = NO_APPROXIMATIONS;
 			else {
 				std::cout << "Invalid abstraction settings" << std::endl;
                 print_usage();

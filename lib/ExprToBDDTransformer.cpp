@@ -148,7 +148,7 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     }
     //std::cout << caches.to_string();
     this->expression = e;
-    variableApproximationHappened = false;  //doesnt seem to be used anywhere
+    //variableApproximationHappened = true;  //doesnt seem to be used anywhere
     auto result = getBDDFromExpr(e, {}, true, true);
 
     operationApproximationHappened = !result.IsPrecise();
@@ -466,7 +466,7 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
         return { var, PRECISE, PRECISE };
     }
 
-    variableApproximationHappened = true;
+    //variableApproximationHappened = true;
 
     bool flip = newBitWidth < 0;
     newBitWidth = abs(newBitWidth);
@@ -700,7 +700,6 @@ Approximated<Bvec> ExprToBDDTransformer::bvec_assocOpApprox(const z3::expr &e, c
     unsigned num = e.num_args();
     auto result = getBvecFromExpr(e.arg(0), boundVars);
     auto resInterval = caches.findInterval(e.arg(0));
-    //std::vector<Interval> resInterval = {{INT_MAX, 0}};
     for (unsigned int i = 1; i < num; i++) {
         auto bvec2 = getBvecFromExpr(e.arg(1), boundVars);
         resInterval= intervalOp(resInterval, caches.findInterval(e.arg(1)));
@@ -980,6 +979,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boundVar> &boundVars) {
+    
     if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
@@ -1146,7 +1146,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<b
 
 Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vector<boundVar> &boundVars, int bitFrom,int extractBits ) 
 {
-    if (ApproximateVars() && incrementedApproxStyle == PRECISION){ 
+    if (ApproximateVars()){ 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         if (prevBvec.has_value()) {
