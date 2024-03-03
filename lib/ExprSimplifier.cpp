@@ -1047,6 +1047,7 @@ expr ExprSimplifier::ExprWalk( const expr &e, const std::set<Z3_decl_kind>& decl
         if (declKinds.find(decl_kind) != declKinds.end())
         {
             return func(arguments, exprInformation,  f);
+           
         }
             
         return f(arguments); 

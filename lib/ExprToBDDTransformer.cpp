@@ -1179,6 +1179,7 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
 {
     assert(e.num_args() == 2);
     //checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
+
     auto state = caches.findStateInCaches(e, boundVars);
     bool createdFreshState = state.IsFresh();
     auto res = bvec_assocOp(

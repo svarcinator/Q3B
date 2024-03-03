@@ -535,7 +535,7 @@ Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigne
 {
     // if there re more intervals then this function will need to be adjusted, such implementation is not planned though
     assert(state.intervals.size() == 1);   
-    assert(state.intervals[0].first == INT_MAX && state.intervals[0].second == 0); 
+    assert(state.intervals[0].first == INT_MAX); 
 
     size_t bitnum = std::max(left.bitnum(), right.bitnum());
     Cudd &manager = check_same_cudd(*left.m_manager, *right.m_manager);

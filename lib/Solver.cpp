@@ -191,9 +191,11 @@ Result Solver::SolveParallel(z3::expr expr)
     TermConstIntroducer tci(expr.ctx());
     auto overExpr = config.addCongruences ? tci.FlattenMul(expr) : expr;
     if (config.lazyEvaluation) {
+        overExpr = simplifier.ReorderAndOrArguments(overExpr);
         expr = simplifier.ReorderAndOrArguments(expr);
     }
     expr = simplifier.MakeAssocOpBinary(expr);
+    overExpr = simplifier.MakeAssocOpBinary(overExpr);
 
     Logger::Log("Solver", "Starting solver threads.", 1);
     auto config = this->config;
