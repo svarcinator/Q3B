@@ -53,7 +53,11 @@ struct Computation_state
         }
         ss << " PreciseBdds: " << preciseBdds << "\n Size: " << bitvec.size() << std::endl;
         for (size_t i = 0; i < bitvec.size(); ++i) {
-            ss << " Pos=" << i << ", value/nodes=" << bitvec[i].HasValue() << "/" << bitvec[i].NodeCount() << std::endl;
+            ss << " Pos=" << i << ", value/nodes=" << bitvec[i].HasValue() << "/" << bitvec[i].NodeCount() <<  std::endl;
+            if (bitvec[i].HasValue()){
+                //bitvec[i].GetBDD().print(2,3);
+            }
+            
         }
         return ss.str();
     }

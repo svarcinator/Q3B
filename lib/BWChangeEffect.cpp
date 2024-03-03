@@ -18,6 +18,7 @@ using namespace z3;
 // oldBW  = newBW - 2;
 std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount)
 {
+    return {{INT_MAX, 0}};
     if (newBW < 2) {
         return {{INT_MAX, 0}};
     }

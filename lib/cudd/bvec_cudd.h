@@ -118,8 +118,14 @@ class Bvec
     static MaybeBDD 
     get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) ;
 
+    static void 
+    setToBeRecomputedBitsToNoVal(Computation_state& prevState);
+
+    static void
+    setRestOfBddsUnknown(Computation_state& state);
+
     static Bvec 
-    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state , unsigned int nodeLimit );
+    bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interval> , Computation_state& , unsigned int nodeLimit );
     static Bvec
     bvec_add(const Bvec &left, const Bvec &right);
 
