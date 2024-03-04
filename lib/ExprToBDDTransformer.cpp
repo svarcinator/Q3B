@@ -503,8 +503,12 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
 Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const vector<boundVar> &boundVars)
 {
     assert(e.is_bv());
+    if (Solver::resultComputed) return {Bvec::bvec_con(bddManager, e.get_sort().bv_size(), 0), APPROXIMATED};
     if (DEBUG) {
-        std::cout << e.to_string() << std::endl;
+        Solver::m_z3context.lock();
+        std::string exprString = e.to_string();
+        Solver::m_z3context.unlock();
+        std::cout << exprString << std::endl;
     }
     
 
@@ -913,9 +917,11 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
 {
     Bvec result(bddManager);
     if ((config.approximationMethod == VARIABLES  || config.approximationMethod == BOTH)  && approximation == UNDERAPPROXIMATION) {
-        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(e.to_string()).bitnum()) );
         std::unique_lock<std::mutex> lk(Solver::m_z3context);
-        auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
+        const std::string expressionString = e.to_string();
+
+        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(expressionString).bitnum()) );
+        auto result = getApproximatedVariable(expressionString, variableBitWidth, approximationType);
         return caches.insertIntoCaches(e, result, boundVars);
     }
     std::unique_lock<std::mutex> lk(Solver::m_z3context);
@@ -1431,3 +1437,44 @@ void ExprToBDDTransformer::PrintNecessaryVarValues(BDD bdd, const std::string &v
         caches.clearCurrentBwAndPrecCaches();
     }
 }
+
+template <typename Top, typename TisDefinite, typename TdefaultResult>
+    BDDInterval ExprToBDDTransformer::getConnectiveBdd(const std::vector<z3::expr> &arguments, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive, Top &&op, TisDefinite &&isDefinite, TdefaultResult &&defaultResult)
+    {
+        
+        std::vector<BDDInterval> bddSubResults;
+
+        for (unsigned int i = 0; i < arguments.size(); i++) {
+            if (isInterrupted()) {
+                std::cout << "interrupted" << std::endl;
+                return defaultResult;
+            }
+            //std::unique_lock<std::mutex> lk(Solver::m_z3context);
+            bddSubResults.push_back(getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive));
+
+            if (!bddSubResults.empty() && isDefinite(bddSubResults.back())) {
+                return bddSubResults.back();
+            }
+        }
+
+        if (bddSubResults.empty()) {
+            return defaultResult;
+        }
+
+        if (!config.lazyEvaluation) {
+            sortVec(bddSubResults);
+        }
+
+        auto toReturn = defaultResult;
+        for (auto &argBdd : bddSubResults) {
+            if (isInterrupted()) {
+                return defaultResult;
+            }
+            toReturn = op(toReturn, argBdd);
+            if (isDefinite(toReturn)) {
+                return toReturn;
+            }
+        }
+
+        return toReturn;
+    }

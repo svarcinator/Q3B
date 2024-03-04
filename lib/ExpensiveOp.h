@@ -22,6 +22,6 @@ public:
     
     
     static void printInfo(const z3::expr& e, const unsigned int n) {
-        std::cout << "Expression " << e.to_string() << " has " << n << " expensive operations" << std::endl;
+        //std::cout << "Expression " << e.to_string() << " has " << n << " expensive operations" << std::endl;
     }
 };

@@ -97,7 +97,7 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
     }
     expr = simplifier.MakeAssocOpBinary(expr);
 
-    Logger::Log("Solver (formula after simpl)", expr.to_string(), 5);
+    //Logger::Log("Solver (formula after simpl)", expr.to_string(), 5);
 
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);
@@ -197,7 +197,7 @@ Result Solver::SolveParallel(z3::expr expr)
     }
     expr = simplifier.MakeAssocOpBinary(expr);
     overExpr = simplifier.MakeAssocOpBinary(overExpr);
-    std::cout << "Expr to be solved : " << expr.to_string() << std::endl;
+    //std::cout << "Expr to be solved : " << expr.to_string() << std::endl;
 
     Logger::Log("Solver", "Starting solver threads.", 1);
     auto config = this->config;

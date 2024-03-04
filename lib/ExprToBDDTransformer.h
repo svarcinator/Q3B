@@ -73,43 +73,10 @@ class ExprToBDDTransformer
     void sortVec(std::vector<std::pair<z3::expr, unsigned int>> &vec);
 
     template <typename Top, typename TisDefinite, typename TdefaultResult>
-    BDDInterval getConnectiveBdd(const std::vector<z3::expr> &arguments, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive, Top &&op, TisDefinite &&isDefinite, TdefaultResult &&defaultResult)
-    {
-        std::vector<BDDInterval> bddSubResults;
+    BDDInterval getConnectiveBdd(const std::vector<z3::expr> &arguments, const std::vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive, Top &&op, TisDefinite &&isDefinite, TdefaultResult &&defaultResult);
 
-        for (unsigned int i = 0; i < arguments.size(); i++) {
-            if (isInterrupted()) {
-                std::cout << "interrupted" << std::endl;
-                return defaultResult;
-            }
-            bddSubResults.push_back(getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive));
 
-            if (!bddSubResults.empty() && isDefinite(bddSubResults.back())) {
-                return bddSubResults.back();
-            }
-        }
-
-        if (bddSubResults.empty()) {
-            return defaultResult;
-        }
-
-        if (!config.lazyEvaluation) {
-            sortVec(bddSubResults);
-        }
-
-        auto toReturn = defaultResult;
-        for (auto &argBdd : bddSubResults) {
-            if (isInterrupted()) {
-                return defaultResult;
-            }
-            toReturn = op(toReturn, argBdd);
-            if (isDefinite(toReturn)) {
-                return toReturn;
-            }
-        }
-
-        return toReturn;
-    }
+    
 
     BDDInterval getConjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
     BDDInterval getDisjunctionBdd(const std::vector<z3::expr> &, const std::vector<boundVar> &, bool, bool);
