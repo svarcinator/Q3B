@@ -310,6 +310,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             return caches.insertIntoCaches(e, bvec_ult(arg1, arg0, isPositive), boundVars, isPositive);
         } else if (decl_kind == Z3_OP_SLEQ) {
             checkNumberOfArguments<2>(e);
+            std::cout << "SLE" <<std::endl;
 
             BDD result;
             
@@ -336,6 +337,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             return caches.insertIntoCaches(e, BDDInterval{ result }, boundVars, isPositive);
         } else if (decl_kind == Z3_OP_SLT) {
             checkNumberOfArguments<2>(e);
+            std::cout << "SLT" <<std::endl;
 
             BDD result;
             auto arg0 = getBvecFromExpr(e.arg(0), boundVars).value;
@@ -508,6 +510,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBvecFromExpr(const expr &e, const ve
 
     auto cachedExpr = caches.foundExprInCaches(e, boundVars);
     if (cachedExpr.has_value()) {
+        //std::cout <<   " Found in cache!!!" << std::endl;
         return cachedExpr.value();
     }
 
@@ -838,7 +841,7 @@ bool ExprToBDDTransformer::ApproximateOps() const
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (false && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
+    return (true && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
@@ -913,7 +916,6 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
         caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(e.to_string()).bitnum()) );
         std::unique_lock<std::mutex> lk(Solver::m_z3context);
         auto result = getApproximatedVariable(e.to_string(), variableBitWidth, approximationType);
-        //checkEqual(result,{ vars.at(e.to_string()), PRECISE });
         return caches.insertIntoCaches(e, result, boundVars);
     }
     std::unique_lock<std::mutex> lk(Solver::m_z3context);

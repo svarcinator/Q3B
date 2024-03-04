@@ -153,12 +153,12 @@ BWChangeEffect::EffectOfUnion(const std::vector<Interval>  &leftChange, const st
         }
         sorted_idx++;
     }
-    /*
+    
     printIntervals(leftChange, "leftChange");
     printIntervals(rightChange, "rightChange");
     printIntervals(sorted, "sorted");
     printIntervals(merged, "merged");
-    */
+    
     return merged;
 }
 

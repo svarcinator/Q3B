@@ -370,6 +370,7 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithoutApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
     
     
+    
     REQUIRE( SolveWithoutApproxLazy("../tests/data/AR-fixpoint-1.smt2") == UNSAT );
     REQUIRE( SolveWithoutApproxLazy("../tests/problematic/188.smt2") == SAT );
     REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/188.smt2", OVERAPPROXIMATION) == SAT );
@@ -378,6 +379,7 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithAllApproxLazy("../tests/problematic/vsl.proof-node1722.smt2") == UNSAT );
     REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithoutApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
+    REQUIRE( SolveWithAllApproxLazy("../tests/problematic/check_bvslt_bvor_64bit-djusted.smt2") == UNSAT );
     
    
 }
