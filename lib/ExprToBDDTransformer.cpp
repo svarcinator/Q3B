@@ -312,10 +312,11 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             checkNumberOfArguments<2>(e);
 
             BDD result;
+            
             auto arg0 = getBvecFromExpr(e.arg(0), boundVars).value;
             auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
 
-            if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
+            if (true &&  (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH)) {
                 auto over = Bvec::bvec_slte_overApprox(arg0, arg1);
 
                 Bvec leastNumber = Bvec::bvec_false(bddManager, arg0.bitnum());
@@ -340,7 +341,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             auto arg0 = getBvecFromExpr(e.arg(0), boundVars).value;
             auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
 
-            if (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) {
+            if ( (config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH)) {
                 Bvec leastNumber = Bvec::bvec_false(bddManager, arg0.bitnum());
                 leastNumber.set(arg0.bitnum() - 1, MaybeBDD(bddManager.bddOne()));
 
@@ -594,7 +595,6 @@ Bvec ExprToBDDTransformer::getNumeralBvec(const z3::expr &e)
     }
 
     int bitSize = s.bv_size();
-
     const string prefix = numeralString.substr(0, 2);
     string valueString = numeralString.substr(2);
 
@@ -821,7 +821,7 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
         swap(arg0, arg1);
     }
 
-    if (ApproximateOps() ){
+    if ( ApproximateOps() ){
         return Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
     } else if (ApproximateVars()) {
         unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
@@ -833,12 +833,12 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
 bool ExprToBDDTransformer::ApproximateOps() const
 {   
     return operationPrecision != 0 && 
-        ( (config.approximationMethod == BOTH && incrementedApproxStyle == PRECISION) || (config.approximationMethod == OPERATIONS));
+        ( (config.approximationMethod == BOTH /*&& incrementedApproxStyle == PRECISION*/) || (config.approximationMethod == OPERATIONS));
 }
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH ));
+    return (false && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
@@ -946,7 +946,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
     if (ApproximateVars()) {
 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-        if (prevBvec.has_value()){
+        if ( prevBvec.has_value()){
             auto res =  bvec_unOpApprox( e,
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::bvec_map1_prev(x,changeInterval, [&](const MaybeBDD &a) { return !a; }, prevBvec.value().value); },
             [&](auto x) {return BWChangeEffect::EffectOnKid(x);}, 
@@ -980,7 +980,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
 
 Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boundVar> &boundVars) {
     
-    if (ApproximateVars()) {
+    if ( ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
             auto res = bvec_assocOpApprox(

@@ -16,23 +16,20 @@ Publication:
 (set-option :produce-models true)
 (declare-fun s () (_ BitVec 64))
 (declare-fun t () (_ BitVec 64))
-(declare-fun x () (_ BitVec 64))
 
 
 
 
 
-(define-fun SC ((s (_ BitVec 64)) (t (_ BitVec 64))) Bool
-(bvslt (bvor (bvnot (bvsub s t)) s) t)
-)
+
 
 (assert
  
   
-  (and  (bvslt (bvor x s) t) (not(SC s t)))
-  )
+  (let ((a!1 (bvor (bvnot (bvadd s (bvmul #xffffffffffffffff t))) s)))
+  (and (bvslt s t) (bvsle t a!1)))
  
-
+)
 (check-sat)
 (get-model)
 

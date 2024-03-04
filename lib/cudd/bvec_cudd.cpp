@@ -272,7 +272,7 @@ Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interv
     if (nodeLimit != UINT_MAX){
         setToBeRecomputedBitsToNoVal( prevState);
     }
-    //auto state = Computation_state();
+    //prevState = Computation_state();
     //return bvec_add_nodeLimit(left, right, UINT_MAX, prevState);
     return bvec_add_nodeLimit(left, right, nodeLimit, prevState);
 }
@@ -310,7 +310,7 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
         ++interval.second;
         ++state.preciseBdds;
         if (nodeLimit != UINT_MAX && nodeLimit != INT_MAX && Bvec::bddNodes(state.bitvec) >  nodeLimit) {
-            //std::cout << "Reached nodeLimit in addition body. NodeLimit = " << nodeLimit << ", number of nodes = " << Bvec::bddNodes(state.bitvec) << ", index = " << interval.second - 1 << std::endl;
+            std::cout << "Reached nodeLimit in addition body. NodeLimit = " << nodeLimit << ", number of nodes = " << Bvec::bddNodes(state.bitvec) << ", index = " << interval.second - 1 << std::endl;
             return;
         }
     }
@@ -330,7 +330,7 @@ void Bvec::setRestOfBddsUnknown(Computation_state& state) {
         std::cout << "I want to see example when this happens (addition with empty interval)" << std::endl; 
         assert(false);
     }
-    for (size_t i = state.intervals[0].second; i < state.bitvec.size(); ++i) {
+    for (size_t i = state.intervals[0].second ; i < state.bitvec.size(); ++i) {
         state.bitvec[i] = MaybeBDD{};
     }
 }
@@ -338,6 +338,7 @@ void Bvec::setRestOfBddsUnknown(Computation_state& state) {
 // state.intervals contain indices that need to be recomputed (either contain ? or are computed for smaller bit width)
 Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state)
 {   
+    assert(state.intervals.size() == 1 && state.intervals[0].first == INT_MAX);
     Cudd& manager = check_same_cudd(*left.m_manager, *right.m_manager);
     if (left.bitnum() == 0 || right.bitnum() == 0 || left.bitnum() != right.bitnum()) {
         return Bvec(manager);
@@ -479,6 +480,7 @@ bool Bvec::add_leftshift_to_result(Bvec const &leftshift,
         state.bitvec[state.m] = right[i].Ite(added[state.m], state.bitvec[state.m]);
         if (reachedLimit(state.bitvec[state.m])) {
             ++state.m;  // m-th Bdd is already computed
+            //std::cout << "Reached limit in multiplication, i = " << i << ", m = " << state.m << std::endl;
             return true;
         }
         ++state.m;
