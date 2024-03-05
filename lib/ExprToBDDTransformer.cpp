@@ -1050,6 +1050,12 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
                 e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+        // auto res2  = bvec_assocOp(
+        //     e, [&](auto x, auto y) { return x + y; }, boundVars);
+
+        // auto res3 = bvec_assocOp(
+        //     e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x,y, 10000); }, boundVars);
+        
         return res;
     } else if (ApproximateVars()) {
         
@@ -1060,7 +1066,11 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
+        
+        
+
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
+    
         if (DEBUG) {
             BvecTester::testAddOrSub(res, bvec_assocOp(
             e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x,y, nodeLimit); }, boundVars), prevBvecState);

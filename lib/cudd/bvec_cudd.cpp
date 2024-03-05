@@ -319,10 +319,10 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
 // returns carry bit. i is the first index that will be computed.
 // therefore we need carry bit from index i-1
 MaybeBDD Bvec::get_carry_bit(Cudd& manager, const Interval& interval, std::vector<MaybeBDD> bitvec,const Bvec &left, const Bvec &right ) {
-    if (interval.second == 0) {
+    if (interval.second <= 0) {
         return MaybeBDD(manager.bddZero());
     }
-    return bitvec[interval.second  - 1] ^ left[interval.second   - 1] ^ right[interval.second  - 1];;
+    return bitvec[interval.second  - 1] ^ left[interval.second   - 1] ^ right[interval.second  - 1];
 }
 void Bvec::setRestOfBddsUnknown(Computation_state& state) {
     if (state.intervals.empty()) {
@@ -350,8 +350,16 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
     }
 
+    MaybeBDD carry = MaybeBDD(manager.bddZero());
     for (Interval& interval : state.intervals) {
-        MaybeBDD carry = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+        MaybeBDD c_min_1 = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+
+        //MaybeBDD carry = (left[interval.second - 1] & right[interval.second - 1]) | (c_min_1 & (left[interval.second - 1] | right[interval.second - 1]));
+
+        if (interval.second != 0) {
+            carry = (left[interval.second - 1] & right[interval.second - 1]) | (c_min_1 & (left[interval.second - 1] | right[interval.second - 1]));
+        } 
+        
         add_body(left, right, nodeLimit,state, carry, interval);
     }
     setRestOfBddsUnknown(state);
@@ -390,9 +398,13 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
     } 
-
+    MaybeBDD carry = MaybeBDD(manager.bddZero());
     for (Interval& interval : state.intervals) {
-        MaybeBDD carry = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+        MaybeBDD c_min_1 = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
+        //MaybeBDD carry = (left[interval.second - 1] & right[interval.second - 1] & carry) | ((~left[interval.second - 1] & ( carry | right[interval.second -1])));
+        if (interval.second != 0) {
+            carry = (left[interval.second - 1] & right[interval.second - 1] & carry) | ((~left[interval.second - 1] & ( carry | right[interval.second -1])));
+        } 
         sub_body(left, right, nodeLimit,state, carry, interval);
     }
 

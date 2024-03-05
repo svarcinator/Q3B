@@ -101,21 +101,23 @@ BWChangeEffect::EffectOnConcat(const std::vector<Interval>& current, const std::
     auto shiftedArg = ShiftLeft(arg, offset);
     return EffectOfUnion(current, shiftedArg); 
 }
-
+// @pre: leftChange, rightChange are sorted
 std::vector<Interval> BWChangeEffect::getSortedIntervals(const std::vector<Interval>  &leftChange, const std::vector<Interval>  &rightChange) {
-    std::vector<Interval> sorted;
+    std::vector<Interval> sorted = {};
     size_t left= 0, right =0;
-    while( left + right < leftChange.size() + rightChange.size()) {
-        if (right >= rightChange.size() || (( leftChange[left].first > rightChange[right].first 
-        || (leftChange[left].first == rightChange[right].first && leftChange[left].second >= rightChange[right].second) ) 
-        && left < leftChange.size())) {
+
+    while( (left + right) < (leftChange.size() + rightChange.size())) {
+        if (right >= rightChange.size() || (left < leftChange.size() && ( leftChange[left].first > rightChange[right].first 
+        || (leftChange[left].first == rightChange[right].first && leftChange[left].second >= rightChange[right].second) ) )) {
             sorted.push_back(leftChange[left]);
             ++left;
         } else {
             sorted.push_back(rightChange[right]);
             ++right;
         }
+        std::cout << "Left = " << left << " right = " << right << std::endl;
     }
+    assert(sorted.size() == leftChange.size() + rightChange.size());
     return sorted;
 }
 
