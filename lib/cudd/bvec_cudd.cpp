@@ -309,7 +309,7 @@ void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
         ++interval.second;
         ++state.preciseBdds;
         if (nodeLimit != UINT_MAX && nodeLimit != INT_MAX && Bvec::bddNodes(state.bitvec) >  nodeLimit) {
-            std::cout << "Reached nodeLimit in addition body. NodeLimit = " << nodeLimit << ", number of nodes = " << Bvec::bddNodes(state.bitvec) << ", index = " << interval.second - 1 << std::endl;
+            //std::cout << "Reached nodeLimit in addition body. NodeLimit = " << nodeLimit << ", number of nodes = " << Bvec::bddNodes(state.bitvec) << ", index = " << interval.second - 1 << std::endl;
             return;
         }
     }

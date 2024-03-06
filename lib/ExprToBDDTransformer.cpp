@@ -760,7 +760,7 @@ Approximated<Bvec> ExprToBDDTransformer::bvec_unOpApprox(const z3::expr &e, cons
 
 bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
 {
-    return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.begin(), [](auto &bit) { return bit.IsOne(); });
+    return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.end(), [](auto &bit) { return bit.IsOne(); });
 }
 
 
