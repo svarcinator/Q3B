@@ -24,7 +24,7 @@ bool BvecTester::testAddOrSub(const Approximated<cudd::Bvec>& approxResult,const
             std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
         }
     }
-    //assert(areEq.IsOne());
+    assert(areEq.IsOne());
     return true;
 }
 
@@ -42,6 +42,6 @@ bool BvecTester::testBvecEq(const Approximated<cudd::Bvec>& approxResult,const A
             std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
         }
     }
-    //assert(areEq.IsOne());
+    assert(areEq.IsOne());
     return true;
 }

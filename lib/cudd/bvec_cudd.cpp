@@ -207,7 +207,6 @@ Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& interval
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
-        std::cout << "Interval in bvec_map1_prev first = " << interval.first << " second = " << interval.second <<std::endl;  
         for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
             res[i] = fun(src[i]);
         }
@@ -354,8 +353,6 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     for (Interval& interval : state.intervals) {
         MaybeBDD c_min_1 = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
 
-        //MaybeBDD carry = (left[interval.second - 1] & right[interval.second - 1]) | (c_min_1 & (left[interval.second - 1] | right[interval.second - 1]));
-
         if (interval.second != 0) {
             carry = (left[interval.second - 1] & right[interval.second - 1]) | (c_min_1 & (left[interval.second - 1] | right[interval.second - 1]));
         } 
@@ -401,7 +398,6 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     MaybeBDD carry = MaybeBDD(manager.bddZero());
     for (Interval& interval : state.intervals) {
         MaybeBDD c_min_1 = Bvec::get_carry_bit(manager, interval, state.bitvec, left, right);
-        //MaybeBDD carry = (left[interval.second - 1] & right[interval.second - 1] & carry) | ((~left[interval.second - 1] & ( carry | right[interval.second -1])));
         if (interval.second != 0) {
             carry = (left[interval.second - 1] & right[interval.second - 1] & carry) | ((~left[interval.second - 1] & ( carry | right[interval.second -1])));
         } 

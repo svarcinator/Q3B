@@ -115,7 +115,6 @@ std::vector<Interval> BWChangeEffect::getSortedIntervals(const std::vector<Inter
             sorted.push_back(rightChange[right]);
             ++right;
         }
-        std::cout << "Left = " << left << " right = " << right << std::endl;
     }
     assert(sorted.size() == leftChange.size() + rightChange.size());
     return sorted;
@@ -156,10 +155,10 @@ BWChangeEffect::EffectOfUnion(const std::vector<Interval>  &leftChange, const st
         sorted_idx++;
     }
     
-    printIntervals(leftChange, "leftChange");
-    printIntervals(rightChange, "rightChange");
-    printIntervals(sorted, "sorted");
-    printIntervals(merged, "merged");
+    // printIntervals(leftChange, "leftChange");
+    // printIntervals(rightChange, "rightChange");
+    // printIntervals(sorted, "sorted");
+    // printIntervals(merged, "merged");
     
     return merged;
 }

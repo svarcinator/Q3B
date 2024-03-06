@@ -310,8 +310,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             return caches.insertIntoCaches(e, bvec_ult(arg1, arg0, isPositive), boundVars, isPositive);
         } else if (decl_kind == Z3_OP_SLEQ) {
             checkNumberOfArguments<2>(e);
-            std::cout << "SLE" <<std::endl;
-
+            
             BDD result;
             
             auto arg0 = getBvecFromExpr(e.arg(0), boundVars).value;
@@ -337,8 +336,7 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             return caches.insertIntoCaches(e, BDDInterval{ result }, boundVars, isPositive);
         } else if (decl_kind == Z3_OP_SLT) {
             checkNumberOfArguments<2>(e);
-            std::cout << "SLT" <<std::endl;
-
+            
             BDD result;
             auto arg0 = getBvecFromExpr(e.arg(0), boundVars).value;
             auto arg1 = getBvecFromExpr(e.arg(1), boundVars).value;
@@ -845,7 +843,7 @@ bool ExprToBDDTransformer::ApproximateOps() const
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (true && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
+    return (false && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
@@ -1050,11 +1048,6 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
                 e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
 
         caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-        // auto res2  = bvec_assocOp(
-        //     e, [&](auto x, auto y) { return x + y; }, boundVars);
-
-        // auto res3 = bvec_assocOp(
-        //     e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x,y, 10000); }, boundVars);
         
         return res;
     } else if (ApproximateVars()) {
