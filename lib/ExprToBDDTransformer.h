@@ -108,7 +108,7 @@ class ExprToBDDTransformer
     void checkEqual(const Approximated<Bvec>& approxRes, const Approximated<Bvec>& orig);
     void checkEqual(const Approximated<Bvec>& approxRes, const std::function<Approximated<Bvec>()> &op);
     Approximated<Bvec> shiftNumeral(const z3::expr &e, const std::vector<boundVar> &, int );
-    Bvec computeConcat(const z3::expr &e, Bvec , Bvec , int , int , bool , std::vector<Interval>&  );
+    Bvec computeConcat(const z3::expr &e,  Bvec , const Bvec& , int , int , bool , std::vector<Interval>&  );
     Approximated<Bvec> getExtractBvec(const z3::expr &e, const std::vector<boundVar> &boundVars, int bitFrom,int extractBits ) ;
     Approximated<Bvec> getCurrentBvec(const z3::expr &e, const std::vector<boundVar> &boundVars, int, bool& )  ;
     Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);

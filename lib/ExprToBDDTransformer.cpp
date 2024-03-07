@@ -1107,7 +1107,7 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
 }
 
 Approximated<Bvec>  ExprToBDDTransformer::getCurrentBvec(const expr &e, const vector<boundVar> &boundVars, int newSize, bool& wasCurrentCached) {
-    if (ApproximateVars() && incrementedApproxStyle == PRECISION){
+    if (ApproximateVars() ){
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if ( prevBvec.has_value() ) {
             wasCurrentCached = true;
@@ -1118,20 +1118,19 @@ Approximated<Bvec>  ExprToBDDTransformer::getCurrentBvec(const expr &e, const ve
     return {Bvec::bvec_false(bddManager, newSize), PRECISE, PRECISE};
 }
 
-Bvec ExprToBDDTransformer::computeConcat(const expr &expr_arg,Bvec currentBvec, Bvec arg, int offset, int newSize, bool wasCurrentCached, std::vector<Interval>& currentInterval ) {
+Bvec ExprToBDDTransformer::computeConcat(const expr &expr_arg,  Bvec currentBvec, const Bvec& arg, int offset, int newSize, bool wasCurrentCached, std::vector<Interval>& currentInterval ) {
     if(wasCurrentCached) {
         auto kidInterval = caches.findInterval(expr_arg);
         currentInterval = BWChangeEffect::EffectOnConcat(currentInterval, kidInterval, offset);
-        currentBvec = Bvec::bvec_map2_prev(currentBvec,
+        return  Bvec::bvec_map2_prev(currentBvec,
                 arg.bvec_coerce(newSize) << offset, currentInterval,
                 [&](const MaybeBDD &a, const MaybeBDD &b) { return b; }, currentBvec);  
     } else {
         
-        currentBvec = Bvec::bvec_map2(currentBvec,
+        return Bvec::bvec_map2(currentBvec,
                 arg.bvec_coerce(newSize) << offset,
                 [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; });
     }
-    return currentBvec;
 }
 
 
@@ -1141,7 +1140,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<b
     unsigned num = e.num_args();
     int newSize = f.range().bv_size();
     int offset = 0;
-    std::vector<Interval> currentInterval = {{}};    // nothing to recompte
+    std::vector<Interval> currentInterval = {};    // nothing to recompte
     bool wasCurrentCached;
     auto  [currentBvec, opPrecision, varPrecision] = getCurrentBvec(e, boundVars, newSize, wasCurrentCached);  
     assert(num > 0);
