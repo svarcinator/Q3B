@@ -22,6 +22,7 @@ bool BvecTester::testAddOrSub(const Approximated<cudd::Bvec>& approxResult,const
         for(size_t i = 0; i < orig.value.m_bitvec.size(); ++i ) {
             bool areEq = orig.value.m_bitvec[i].Equals(approxResult.value.m_bitvec[i]);
             std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
+            //assert(areEq);
         }
         assert(!areEq.IsZero());
     }
@@ -41,6 +42,27 @@ bool BvecTester::testBvecEq(const Approximated<cudd::Bvec>& approxResult,const A
         for(size_t i = 0; i < approxResult.value.m_bitvec.size(); ++i ) {
             bool areEq = orig.value.m_bitvec[i].Equals(approxResult.value.m_bitvec[i]);
             std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
+            //assert(areEq);
+        }
+        assert(!areEq.IsZero());
+    }
+    //assert(areEq.IsOne());
+    return true;
+}
+
+bool BvecTester::testBvecEq(const cudd::Bvec& approxResult,const cudd::Bvec& orig ) {
+    auto areEq = approxResult == orig;
+    if (!areEq.IsOne()) {
+        std::cout << "Are zero then? " << areEq.IsZero() << std::endl;
+        // manually go through bvecs
+        auto origState = Computation_state(orig.m_bitvec);
+        auto resultState = Computation_state(approxResult.m_bitvec);
+        std::cout << "Orig:  " << origState.toString(); 
+        std::cout << "Approximated result:  " << resultState.toString(); 
+        for(size_t i = 0; i < approxResult.m_bitvec.size(); ++i ) {
+            bool areEq = orig.m_bitvec[i].Equals(approxResult.m_bitvec[i]);
+            std::cout << "Index i=" << i<< ". Are equal? " << areEq << std::endl;
+            //assert(areEq);
         }
         assert(!areEq.IsZero());
     }

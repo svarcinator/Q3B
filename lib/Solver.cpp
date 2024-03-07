@@ -133,11 +133,11 @@ Result Solver::solverThread(z3::expr expr, Config config, Approximation approxim
 
     if (res == SAT || res == UNSAT) {
         std::stringstream ss;
-        /*
+        
         if (approximation == NO_APPROXIMATION) {
             Logger::Log("Solver", "Decided by the base solver", 1);
         }
-        */
+        
 
         std::unique_lock<std::mutex> lk(m_res);
         if (!resultComputed) {

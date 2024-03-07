@@ -197,7 +197,7 @@ Bvec Bvec::bvec_update_shifted(const Bvec &src, const std::vector<Interval>& int
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= std::min((size_t)interval.first, prev_bvec.bitnum() -1); ++i) {
+        for(int i = interval.second; i <= std::min(interval.first, (int)src.bitnum() -1); ++i) {
             res[i] = src[i - shift];    // test this
         }
     }
@@ -224,7 +224,8 @@ Bvec Bvec::bvec_map1(const Bvec &src, std::function<MaybeBDD(const MaybeBDD &)> 
     return res;
 }
 
-Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vector<Interval>& intervals,std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun,const Bvec &prev_bvec)
+Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vector<Interval>& intervals,
+                            std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun,const Bvec &prev_bvec)
 {
     Cudd &manager = check_same_cudd(*first.m_manager, *second.m_manager);
     Bvec res = Bvec(manager, prev_bvec.m_bitvec);
@@ -241,7 +242,7 @@ Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vect
     return res;
 }
 
-Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun)
+Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeBDD(const MaybeBDD &, const MaybeBDD &)> fun) 
 {
     Cudd &manager = check_same_cudd(*first.m_manager, *second.m_manager);
     Bvec res(manager);
@@ -272,12 +273,11 @@ Bvec Bvec::bvec_add_prev(const Bvec &left, const Bvec &right, std::vector<Interv
     if (nodeLimit != UINT_MAX){
         setToBeRecomputedBitsToNoVal( prevState);
     }
-    //prevState = Computation_state();
-    //return bvec_add_nodeLimit(left, right, UINT_MAX, prevState);
     return bvec_add_nodeLimit(left, right, nodeLimit, prevState);
 }
 Bvec Bvec::bvec_add(const Bvec &left, const Bvec &right)
 {
+    
     auto state = Computation_state(); // fresh computation state
     return bvec_add_nodeLimit(left, right, UINT_MAX, state);
 }

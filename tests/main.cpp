@@ -731,5 +731,67 @@ TEST_CASE(" Extract Test")
 	std::vector<Interval> res8={};
 	
 	REQUIRE(BWChangeEffect::EffectOnExtract(vec8, 3, 3) == res8);
+}
+
+
+TEST_CASE("Uninon Test") 
+{
+        // CASE 1 union 
+	std::vector<Interval> a ={{7,6}, {1, 0}};
+	std::vector<Interval> b ={{7,3}, {1, 0}};
+	
+	REQUIRE(BWChangeEffect::EffectOfUnion(a, b) == b);
+	
+	// CASE 2
+	std::vector<Interval> a2 ={{7,6}, {1, 0}};
+	std::vector<Interval> b2 ={ {INT_MAX, 0}};
+	
+	REQUIRE(BWChangeEffect::EffectOfUnion(a2, b2) == b2);
+	
+	// CASE 3
+	std::vector<Interval> a3 ={{7,6}, {1, 0}};
+	std::vector<Interval> b3 ={ {7, 2}};
+	std::vector<Interval> res3 ={ {7, 2}, {1,0}};
+	
+	REQUIRE(BWChangeEffect::EffectOfUnion(a3, b3) == res3);
+	
+	// CASE 4
+	std::vector<Interval> a4 ={{7,6}, {1, 0}};
+	std::vector<Interval> b4 ={ };
+	
+	REQUIRE(BWChangeEffect::EffectOfUnion(a4, b4) == a4);
 	
 }
+
+TEST_CASE(" Concat Test") 
+{
+        // CASE 1 concat 
+	std::vector<Interval> a ={{7,6}, {1, 0}};
+	std::vector<Interval> b={};
+	std::vector<Interval> res ={{10,9}, {4, 3}};
+	
+	REQUIRE(BWChangeEffect::EffectOnConcat(b, a , 3) == res);
+	
+	// CASE 2 concat 
+	std::vector<Interval> a2 ={{7,6}, {1, 0}};
+	std::vector<Interval> res2={{15, 14},{9,8}, {7,6}, {1, 0}};
+	
+	REQUIRE(BWChangeEffect::EffectOnConcat(a2, a2 , 8) == res2);
+	
+	// CASE 3 concat 
+	std::vector<Interval> a3 ={};
+	std::vector<Interval> res3={};
+	
+	REQUIRE(BWChangeEffect::EffectOnConcat(a3, a3 , 8) == res3);
+	
+	// CASE 4 concat 
+	std::vector<Interval> a4 ={{7,6}, {1, 0}};
+	std::vector<Interval> b4={{INT_MAX, 0}};
+	
+	std::vector<Interval> res4={{INT_MAX, 8}, {7,6}, {1,0}};
+	
+	REQUIRE(BWChangeEffect::EffectOnConcat(b4, a4 , 8) == b4);
+	REQUIRE(BWChangeEffect::EffectOnConcat(a4, b4 , 8) == res4);
+}
+
+

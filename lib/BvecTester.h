@@ -30,4 +30,7 @@ public:
     static bool
     testBvecSize(size_t size, const Approximated<cudd::Bvec>& approxResult) ;
 
+    static bool 
+    testBvecEq(const cudd::Bvec& approxResult,const cudd::Bvec& orig );
+
 };

@@ -2,17 +2,15 @@
 #include "IntervalTester.h"
 
 
-#define DEBUG false
+#define DEBUG true
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
     bvecExprCache.insert({ (Z3_ast) expr, { bvec, boundVars } });
 
     if (bvec.value.isPrecise()) {   //isPresise iff does not contain ? value
-        if(bvec.value.bitnum() <= variableBitWidth) {
-            //preciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });  // not correct on heapsort.i_0.smt2
-        }
         sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
+        
     }
     return bvec;
 }
