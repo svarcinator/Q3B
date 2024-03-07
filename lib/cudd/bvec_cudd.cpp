@@ -192,12 +192,13 @@ Bvec Bvec::bvec_copy(const Bvec &other)
     return Bvec(other);
 }
 
-Bvec Bvec::bvec_update_shifted(const Bvec &src, const std::vector<Interval>& intervals, unsigned int shift, const Bvec &prev_bvec)
+// num is positive iff shift left (if negative, then shift right)
+Bvec Bvec::bvec_update_shifted(const Bvec &src, const std::vector<Interval>& intervals,  int shift, const Bvec &prev_bvec)
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
-            res[i] = src[i + shift];    // test this
+        for(size_t i = interval.second; i <= std::min((size_t)interval.first, prev_bvec.bitnum() -1); ++i) {
+            res[i] = src[i - shift];    // test this
         }
     }
     return res;
@@ -207,7 +208,7 @@ Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& interval
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= std::min(interval.first, src.bitnum() -1); ++i) {
+        for(size_t i = interval.second; i <= std::min((size_t)interval.first, src.bitnum() -1); ++i) {
             res[i] = fun(src[i]);
         }
     }
@@ -233,7 +234,7 @@ Bvec Bvec::bvec_map2_prev(const Bvec &first, const Bvec &second, const std::vect
     }
 
     for (auto interval : intervals) {
-        for(size_t i = interval.second; i <= std::min(interval.first, prev_bvec.m_bitvec.size() -1 ); ++i) {
+        for(size_t i = interval.second; i <= std::min((size_t)interval.first, prev_bvec.m_bitvec.size() -1 ); ++i) {
             res[i] = fun(first[i], second[i]);
         }
     }
@@ -258,7 +259,7 @@ Bvec Bvec::bvec_map2(const Bvec &first, const Bvec &second, std::function<MaybeB
 
 void Bvec::setToBeRecomputedBitsToNoVal(Computation_state& prevState) {
     for (auto interval : prevState.intervals) {
-        int idx = (interval.first == INT_MAX)? prevState.bitvec.size() : std::min(interval.first + 1, prevState.bitvec.size());
+        int idx = (interval.first == INT_MAX)? prevState.bitvec.size() : std::min((size_t)interval.first + 1, prevState.bitvec.size());
         for(int i = interval.second; i < idx; ++i) {
             prevState.bitvec[i] = MaybeBDD{};
         }
@@ -302,7 +303,7 @@ unsigned int Bvec::count_precise_bdds(const std::vector<MaybeBDD>& bitvec)
 // return true iff nodeLimit reached
 void Bvec::add_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval)
 {
-    size_t idx = (interval.first == INT_MAX)? state.bitvec.size() : std::min(interval.first + 1, state.bitvec.size());
+    int idx = (interval.first == INT_MAX)? state.bitvec.size() : std::min(interval.first + 1, (int)state.bitvec.size());
     while (interval.second < idx) {
         state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
         carry = (left[interval.second] & right[interval.second]) | (carry & (left[interval.second] | right[interval.second]));
@@ -374,7 +375,7 @@ Bvec Bvec::bvec_sub_prev(const Bvec &left, const Bvec &right, std::vector<Interv
 }
 
 void Bvec::sub_body(const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, MaybeBDD& carry,  Interval& interval){
-    size_t idx = (interval.first == INT_MAX)? state.bitvec.size() : std::min(interval.first + 1, state.bitvec.size());
+    int idx = (interval.first == INT_MAX)? state.bitvec.size() : std::min(interval.first + 1, (int)state.bitvec.size());
     while (interval.second < idx) {
         state.bitvec[interval.second] = ((left[interval.second] ^ right[interval.second]) ^ carry);
         carry = (left[interval.second] & right[interval.second] & carry) | ((~left[interval.second] & ( carry | right[interval.second])));
@@ -518,8 +519,8 @@ void Bvec::multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int 
     
     
     Cudd &manager = check_same_cudd(*leftshift.m_manager, *right.m_manager);
-
-    while (interval.second < std::min(right.bitnum(), interval.first + 1)) {
+    int idx = (interval.first == INT_MAX)? right.bitnum() : std::min(interval.first + 1, (int)right.bitnum());
+    while (interval.second < idx) {
         if (right[interval.second].IsZero()) {
             state.preciseBdds++;
         } else {
@@ -642,7 +643,7 @@ int Bvec::bvec_div(const Bvec &left, const Bvec &right, Bvec &result, Bvec &rema
 
 void Bvec::div_body(const Bvec &right, const size_t bitnum, unsigned int nodeLimit, Computation_state& state, MaybeBDD zero,Bvec& div, Bvec& rem ){
     
-    while ( state.intervals.back().second < right.bitnum() + 1) {
+    while ( state.intervals.back().second < (int)right.bitnum() + 1) {
 
         MaybeBDD divLteRem = Bvec::bvec_lte(div, rem);
         Bvec remSubDiv = Bvec::bvec_sub(rem, div);
@@ -736,7 +737,9 @@ Bvec Bvec::bvec_ite(const MaybeBDD &val, const Bvec &left, const Bvec &right,  C
 
 
 void Bvec::ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int nodeLimit, Computation_state& state, Interval& interval ){
-    while (interval.second < std::min(left.bitnum(), interval.first )) {
+    int idx = (interval.first == INT_MAX)? left.bitnum() : std::min(interval.first + 1, (int)left.bitnum());
+   
+    while (interval.second < idx ) {
             state.bitvec[interval.second]= (val.Ite(left[interval.second], right[interval.second]));
             ++interval.second;
 

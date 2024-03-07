@@ -12,7 +12,7 @@
 #include "BDDInterval.h"
 #include "ComputationState.h"
 
-typedef std::pair<std::size_t, std::size_t> Interval;
+typedef std::pair<int, int> Interval;
 
 class BvecTester {
 
@@ -26,5 +26,8 @@ public:
 
     static bool 
     testBvecEq(const Approximated<cudd::Bvec>& approxResult,const Approximated<cudd::Bvec>& orig );
+
+    static bool
+    testBvecSize(size_t size, const Approximated<cudd::Bvec>& approxResult) ;
 
 };

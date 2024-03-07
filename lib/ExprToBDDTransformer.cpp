@@ -10,7 +10,7 @@
 #include <list>
 #include <sstream>
 
-#define DEBUG false
+#define DEBUG true
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -396,11 +396,11 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
         if (onlyExistentials) {
             if (Z3_is_quantifier_forall(*context, (Z3_ast) e)) {
                 //only existentials so far, but this one is universal
-                auto oldsameBWImpreciseBvecStates = caches.sameBWImpreciseBvecStates;
-                caches.sameBWImpreciseBvecStates.clear();
+                //auto oldsameBWImpreciseBvecStates = caches.sameBWImpreciseBvecStates;
+                //caches.sameBWImpreciseBvecStates.clear();
                 bodyBdd = getBDDFromExpr(e.body(), newBoundVars, false, isPositive);
                 // TODO findout what is wrong here
-                caches.sameBWImpreciseBvecStates = oldsameBWImpreciseBvecStates;
+                //caches.sameBWImpreciseBvecStates = oldsameBWImpreciseBvecStates;
             } else {
                 //only existentials so far and this one is also existential
                 auto oldBDDCache = caches.bddExprCache;
@@ -838,12 +838,12 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
 bool ExprToBDDTransformer::ApproximateOps() const
 {   
     return operationPrecision != 0 && 
-        ( (config.approximationMethod == BOTH /*&& incrementedApproxStyle == PRECISION*/) || (config.approximationMethod == OPERATIONS));
+        ( (config.approximationMethod == BOTH && incrementedApproxStyle == PRECISION ) || (config.approximationMethod == OPERATIONS));
 }
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (false && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
+    return (true && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
@@ -1159,11 +1159,20 @@ Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vec
 {
     if (ApproximateVars()){ 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-        auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         if (prevBvec.has_value()) {
-            return bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
-            { return Bvec::bvec_update_shifted(x, changeInterval,  bitFrom, prevBvec.value().value); },
+            auto res =  bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
+            { return Bvec::bvec_update_shifted(x, changeInterval,  -bitFrom, prevBvec.value().value); },
               [&](auto x) {return BWChangeEffect::EffectOnExtract(x,bitFrom, extractBits );},boundVars);
+            if (DEBUG) {
+                BvecTester::testBvecSize( extractBits,res);
+                checkEqual(res, [&](){return bvec_unOp(
+            e,
+            [&](auto x) { return x
+                                  .bvec_shrfixed(bitFrom, MaybeBDD(bddManager.bddZero()))
+                                  .bvec_coerce(extractBits); },
+            boundVars);});
+            }
+            return res;
         }
             
     } 
@@ -1188,8 +1197,7 @@ Approximated<Bvec> ExprToBDDTransformer::getExtract(const expr &e, const vector<
 
 Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boundVar> &boundVars)
 {
-    assert(e.num_args() == 2);
-    //checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
+    checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
 
     auto state = caches.findStateInCaches(e, boundVars);
     bool createdFreshState = state.IsFresh();
@@ -1291,7 +1299,7 @@ Approximated<Bvec> ExprToBDDTransformer::getIte(const expr &e, const vector<boun
             bool createdFreshState = state.IsFresh();
             result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
             caches.insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, createdFreshState);
-        }else if(ApproximateVars()) {
+        }else if( ApproximateVars()) {
             auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
             
             if (prevBvec.has_value()){

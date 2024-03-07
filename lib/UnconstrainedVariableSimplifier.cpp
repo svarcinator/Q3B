@@ -11,7 +11,7 @@ using namespace z3;
 
 map<string, int> UnconstrainedVariableSimplifier::countVariableOccurences(expr e, bool isPositive, Goal goal = NONE)
 {
-    if (e.get_sort().is_bv())
+	if (e.get_sort().is_bv())
     {
         auto item = subformulaVariableCounts.find({e, isPositive, goal});
         if (item != subformulaVariableCounts.end())

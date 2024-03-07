@@ -1,7 +1,8 @@
 #pragma once
 #include <vector>
 #include <utility>
-typedef std::pair<std::size_t, std::size_t> Interval;
+
+typedef std::pair<int, int> Interval;
 
 class IntervalTester {
 
@@ -24,4 +25,6 @@ public:
 
     static bool 
     testIntervals(const std::vector<Interval>& vec);
+
+    
 };

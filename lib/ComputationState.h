@@ -2,7 +2,7 @@
 #include <climits>
 #include <sstream>
 
-typedef std::pair<size_t, size_t> Interval;
+typedef std::pair<int, int> Interval;
 
 struct Computation_state
 {

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <climits>
 
 ////////////////////////////////
 ///// TEST INTERVAL ////////////
@@ -90,4 +91,5 @@ bool IntervalTester::testIntervals(const std::vector<Interval>& vec) {
     assert(res);
     return res;
 }
+
 

@@ -9,7 +9,7 @@
 #include "Caches.h"
 
 
-typedef std::pair<size_t, size_t> Interval;
+typedef std::pair<int, int> Interval;
 typedef std::pair<std::string, int> var;
 
 
@@ -37,7 +37,7 @@ class BWChangeEffect
     EffectFromLeastSignChangedBit(const std::vector<Interval>  &);
 
     static std::vector<Interval>
-    ShiftLeft(const std::vector<Interval>  & , unsigned int);
+    ShiftLeft(const std::vector<Interval>  & ,  int);
 
     static std::vector<Interval>
     EffectOnConcat(const std::vector<Interval>& current, const std::vector<Interval>& arg,  unsigned int offset );
@@ -58,7 +58,7 @@ class BWChangeEffect
     checkRightBound(const Interval& interval);
 
     static std::vector<Interval>
-    ShiftRight(const std::vector<Interval>&  , unsigned int );
+    ShiftRight(const std::vector<Interval>&  , int );
 
     static bool 
     checkRightBound(const Interval& interval, unsigned int bound);
@@ -71,6 +71,7 @@ class BWChangeEffect
 
     static std::vector<Interval>
     EffectOfShift(const std::vector<Interval>  &childChange, int shift);
+
 };
 #endif
 

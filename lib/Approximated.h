@@ -4,7 +4,7 @@
 
 enum Precision { APPROXIMATED, PRECISE };
 
-typedef std::pair<size_t, size_t> Interval;
+typedef std::pair<int, int> Interval;
 
 Precision operator && (const Precision &l, const Precision &r);
 
