@@ -25,7 +25,7 @@ ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config 
     configureReorder();
 
     loadVars();
-
+    //setApproximationType(ZERO_EXTEND);
     setApproximationType(SIGN_EXTEND); // why? -- under and over appr set appr type themselves, no appr does not need it
 }
 
@@ -1122,6 +1122,7 @@ Approximated<Bvec>  ExprToBDDTransformer::getCurrentBvec(const expr &e, const ve
 Bvec ExprToBDDTransformer::computeConcat(const expr &expr_arg,  Bvec currentBvec, const Bvec& arg, int offset, int newSize, bool wasCurrentCached, std::vector<Interval>& currentInterval ) {
     if( wasCurrentCached) {
         auto kidInterval = caches.findInterval(expr_arg);
+        kidInterval = BWChangeEffect::EffectOnExtract(kidInterval, 0, arg.m_bitvec.size() );
         kidInterval = BWChangeEffect::ShiftLeft(kidInterval, offset);
         std::cout << "Compute concat: new size = " << newSize <<  " current bvec size" << currentBvec.m_bitvec.size() << " offset=" << offset <<std::endl;
         std::cout << "Kid expr: " << expr_arg.to_string()  << " Kid size = " << arg.m_bitvec.size()<< std::endl;
@@ -1130,7 +1131,7 @@ Bvec ExprToBDDTransformer::computeConcat(const expr &expr_arg,  Bvec currentBvec
         for(auto i : kidInterval) {
             std::cout << "[ " << i.first << ", " << i.second << "]" << std::endl;
         }
-        currentBvec = Bvec::bvec_update_shifted(arg, kidInterval, offset,currentBvec );
+        currentBvec = Bvec::bvec_update_shiftedConcat(arg, kidInterval, offset,currentBvec );
         if (DEBUG) {
             for (int i = 0; i < arg.m_bitvec.size(); ++i) {
                     assert(arg.m_bitvec[i].Equals(currentBvec.m_bitvec[i + offset]));
@@ -1173,7 +1174,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConcat(const expr &e, const vector<b
 
 Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vector<boundVar> &boundVars, int bitFrom,int extractBits ) 
 {
-    if (ApproximateVars()){ 
+    if (true && ApproximateVars()){ 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if (prevBvec.has_value()) {
             auto res =  bvec_unOpApprox(e, [&](auto x,  std::vector<Interval> changeInterval ) 
@@ -1189,9 +1190,7 @@ Approximated<Bvec> ExprToBDDTransformer::getExtractBvec(const expr &e, const vec
             boundVars);});
             }
             return res;
-        }
-        std::cout << "In extract not found in caches" << std::endl;
-            
+        }            
     } 
     return bvec_unOp(
             e,
@@ -1311,12 +1310,12 @@ Approximated<Bvec> ExprToBDDTransformer::getIte(const expr &e, const vector<boun
         auto arg2 = getBvecFromExpr(e.arg(2), boundVars).value;
         auto maybeArg0 = MaybeBDD(arg0.upper);
 
-        if (ApproximateOps() ) {
+        if (true &&ApproximateOps() ) {
             auto state = caches.findStateInCaches(e, boundVars);
             bool createdFreshState = state.IsFresh();
             result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2, precisionMultiplier * operationPrecision, state);
             caches.insertStateIntoCaches(e, state, boundVars, { result, APPROXIMATED, APPROXIMATED }, createdFreshState);
-        }else if( false &&ApproximateVars()) {
+        }else if( true &&ApproximateVars()) {
             auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
             
             if (prevBvec.has_value()){
@@ -1324,6 +1323,7 @@ Approximated<Bvec> ExprToBDDTransformer::getIte(const expr &e, const vector<boun
                 auto resInterval= BWChangeEffect::EffectOfUnion(caches.findInterval(e.arg(1)), caches.findInterval(e.arg(2)));
                 prevBvecState.intervals = resInterval;
                 caches.insertInterval(e, resInterval);
+                std::cout << prevBvecState.toString() << std::endl;
                 result = Bvec::bvec_ite(MaybeBDD{ maybeArg0 }, arg1, arg2,  prevBvecState);
                 caches.insertStateIntoCaches(e, prevBvecState, boundVars, { result, APPROXIMATED, APPROXIMATED }, true); // always creating new state that is not in state cache   
             } else {

@@ -204,6 +204,17 @@ Bvec Bvec::bvec_update_shifted(const Bvec &src, const std::vector<Interval>& int
     return res;
 }
 
+Bvec Bvec::bvec_update_shiftedConcat(const Bvec &src, const std::vector<Interval>& intervals,  int shift, const Bvec &prev_bvec)
+{
+    Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);
+    for (auto interval : intervals) {
+        for(int i = interval.second; i <= std::min(interval.first, (int)prev_bvec.bitnum() -1); ++i) {
+            res[i] = src[i - shift];    // test this
+        }
+    }
+    return res;
+}
+
 Bvec Bvec::bvec_map1_prev(const Bvec &src, const std::vector<Interval>& intervals,std::function<MaybeBDD(const MaybeBDD &)> fun,const Bvec &prev_bvec)
 {
     Bvec res = Bvec(*src.m_manager, prev_bvec.m_bitvec);

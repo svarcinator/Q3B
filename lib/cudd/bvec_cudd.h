@@ -100,6 +100,9 @@ class Bvec
     bvec_copy(const Bvec &other);
 
     static Bvec 
+    bvec_update_shiftedConcat(const Bvec &src, const std::vector<Interval>& intervals,  int shift, const Bvec &prev_bvec);
+    
+    static Bvec 
     bvec_update_shifted(const Bvec &src, const std::vector<Interval>& ,  int , const Bvec &);
 
     static Bvec

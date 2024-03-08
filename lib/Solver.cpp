@@ -234,6 +234,7 @@ Result Solver::runOverApproximation(ExprToBDDTransformer &transformer, int bitWi
     if (resultComputed)
         return UNKNOWN;
     transformer.setApproximationType(SIGN_EXTEND);
+    transformer.setApproximationType(ZERO_EXTEND);
 
     std::stringstream ss;
     ss << "Trying bit-width " << bitWidth << ", precision " << precision;
