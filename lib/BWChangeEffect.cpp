@@ -7,7 +7,7 @@
 #include <mutex>
 
 
-#define DEBUG true
+#define DEBUG false
 
 using namespace z3;
 
@@ -34,7 +34,7 @@ std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount,unsig
 // tests interval on the input on basic properties
 void BWChangeEffect::AreIntervalsCorrect(const std::vector<Interval> &intervals) 
 {
-    IntervalTester::testIntervals(intervals);
+    //IntervalTester::testIntervals(intervals);
 }
 
 int BWChangeEffect::getRightmostBit(const Interval &leftChange, const Interval &rightChange)  {

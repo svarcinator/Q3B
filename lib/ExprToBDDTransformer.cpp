@@ -957,7 +957,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::bvec_map1_prev(x,changeInterval, [&](const MaybeBDD &a) { return !a; }, prevBvec.value().value); },
             [&](auto x) {return BWChangeEffect::EffectOnKid(x);}, 
             boundVars); // same effect (interval) as on child
-            checkEqual(res,[&]() {return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);}  ); //tests res if DEBUG == true
+            //checkEqual(res,[&]() {return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);}  ); //tests res if DEBUG == true
             return res;
         }  
     }
@@ -974,8 +974,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::arithmetic_neg_prev(x,changeInterval, prevBvecState); },
             [&](auto x) {return BWChangeEffect::EffectFromLeastSignChangedBit(x);}, 
             boundVars); 
-            checkEqual(result,  [&] () {return bvec_unOp(
-                    e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);});
+            // checkEqual(result,  [&] () {return bvec_unOp(
+            //         e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);});
             
             return result;
         }  
@@ -993,8 +993,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boun
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a | b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            checkEqual(res, [&](){return bvec_assocOp(
-                    e, [&](const Bvec &a, const Bvec &b) { return a | b; }, boundVars);});
+            // checkEqual(res, [&](){return bvec_assocOp(
+            //         e, [&](const Bvec &a, const Bvec &b) { return a | b; }, boundVars);});
             return res;
         }
         
@@ -1011,8 +1011,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBAnd(const expr &e, const vector<bou
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a & b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            checkEqual(res, [&](){return bvec_assocOp(
-                    e, [&](const Bvec &a, const Bvec &b) { return a & b; }, boundVars);});
+            // checkEqual(res, [&](){return bvec_assocOp(
+            //         e, [&](const Bvec &a, const Bvec &b) { return a & b; }, boundVars);});
             return res;
         }
         
@@ -1029,8 +1029,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBXor(const expr &e, const vector<bou
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            checkEqual(res, [&]() {return bvec_assocOp(
-                    e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);});
+            // checkEqual(res, [&]() {return bvec_assocOp(
+            //         e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);});
             return res;
         }
         

@@ -2,7 +2,7 @@
 #include "IntervalTester.h"
 
 
-#define DEBUG true
+#define DEBUG false
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
