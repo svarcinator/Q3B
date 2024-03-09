@@ -21,7 +21,7 @@ class BWChangeEffect
   public:
 
     static std::vector<Interval>
-    EffectOnVar(int, uint);
+    EffectOnVar(int, uint, unsigned int operationPrecision);
     
     static void 
     AreIntervalsCorrect(const std::vector<Interval> &intervals);

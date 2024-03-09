@@ -904,8 +904,7 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
     boundVar bVar = boundVars[boundVars.size() - deBruijnIndex - 1];
 
     if (shouldApproximateVar(bVar)) {
-
-        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum()) ); // latter arg is number of bits of the var
+        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum(), operationPrecision) ); // latter arg is number of bits of the var
         auto res = getApproximatedVariable(bVar.first, variableBitWidth, approximationType);
         return caches.insertIntoCaches(e,res, boundVars);
     }
@@ -919,7 +918,7 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
         std::unique_lock<std::mutex> lk(Solver::m_z3context);
         const std::string expressionString = e.to_string();
 
-        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(expressionString).bitnum()) );
+        caches.insertInterval(e, BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(expressionString).bitnum(),operationPrecision) );
         auto result = getApproximatedVariable(expressionString, variableBitWidth, approximationType);
         return caches.insertIntoCaches(e, result, boundVars);
     }
@@ -1474,7 +1473,7 @@ template <typename Top, typename TisDefinite, typename TdefaultResult>
                 std::cout << "interrupted" << std::endl;
                 return defaultResult;
             }
-            //std::unique_lock<std::mutex> lk(Solver::m_z3context);
+            //std::cout << "Argument i = " << i << " expr : " << arguments[i].to_string() << std::endl;
             bddSubResults.push_back(getBDDFromExpr(arguments[i], boundVars, onlyExistentials, isPositive));
 
             if (!bddSubResults.empty() && isDefinite(bddSubResults.back())) {
@@ -1486,7 +1485,7 @@ template <typename Top, typename TisDefinite, typename TdefaultResult>
             return defaultResult;
         }
 
-        if (!config.lazyEvaluation) {
+        if (!config.lazyEvaluation ) {
             sortVec(bddSubResults);
         }
 

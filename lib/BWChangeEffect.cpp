@@ -16,11 +16,12 @@ using namespace z3;
 
 // only if aproximated
 // oldBW  = newBW - 2;
-std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount)
+std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount,unsigned int operationPrecision )
 {
-    if (newBW <= 2) {
+    if (newBW <= 2 || (operationPrecision == 2 && newBW == 128) ) {
         return {{bitCount, 0}};
     }
+    
     assert(newBW != 0 && newBW % 2 == 0);
     // seems like there is always only middle extension applied
     int left_index = bitCount - (newBW / 2); // bitcount - (newitWidth / 2) - 1 is the first index tht is set to 0
