@@ -97,7 +97,7 @@ Result Solver::Solve(z3::expr expr, Approximation approximation, int effectiveBi
     }
     expr = simplifier.MakeAssocOpBinary(expr);
 
-    //Logger::Log("Solver (formula after simpl)", expr.to_string(), 5);
+    //Logger::Log("Solver (non threaded) (formula after simpl)", expr.to_string(), 5);
 
     Logger::Log("Solver", "Starting solver.", 1);
     auto result = getResult(expr, approximation, effectiveBitWidth);
@@ -197,7 +197,6 @@ Result Solver::SolveParallel(z3::expr expr)
     }
     expr = simplifier.MakeAssocOpBinary(expr);
     overExpr = simplifier.MakeAssocOpBinary(overExpr);
-    //std::cout << "Expr to be solved : " << expr.to_string() << std::endl;
 
     Logger::Log("Solver", "Starting solver threads.", 1);
     auto config = this->config;
@@ -234,7 +233,7 @@ Result Solver::runOverApproximation(ExprToBDDTransformer &transformer, int bitWi
     if (resultComputed)
         return UNKNOWN;
     transformer.setApproximationType(SIGN_EXTEND);
-    transformer.setApproximationType(ZERO_EXTEND);
+    //transformer.setApproximationType(ZERO_EXTEND);
 
     std::stringstream ss;
     ss << "Trying bit-width " << bitWidth << ", precision " << precision;

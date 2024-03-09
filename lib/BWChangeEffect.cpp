@@ -18,14 +18,15 @@ using namespace z3;
 // oldBW  = newBW - 2;
 std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount)
 {
-    if (newBW < 2) {
-        return {{INT_MAX, 0}};
+    if (newBW <= 2) {
+        return {{bitCount, 0}};
     }
     assert(newBW != 0 && newBW % 2 == 0);
     // seems like there is always only middle extension applied
     int left_index = bitCount - (newBW / 2); // bitcount - (newitWidth / 2) - 1 is the first index tht is set to 0
     int right_index = newBW - (newBW / 2) - 1;
     if (left_index < right_index ) {return {};} // nothing to be computed
+    // return { { bitCount, left_index }, { right_index, 0 } };
     return { { left_index, left_index }, { right_index, right_index } };
 }
 

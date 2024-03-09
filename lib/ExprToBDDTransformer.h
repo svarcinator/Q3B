@@ -105,6 +105,9 @@ class ExprToBDDTransformer
     Approximated<Bvec> getConcatApproximated(const z3::expr &e, const std::vector<boundVar> &boundVars, const Approximated<Bvec>&);
 
     // helper funcs
+    z3::expr getLastItePart(const z3::expr &e, z3::expr (*op)(const z3::expr &e1, const z3::expr &e2),
+                                          const z3::expr &arg0, const z3::expr &arg1, const z3::expr &zero, const z3::expr &one,
+                                          const z3::expr &msb_s, const z3::expr &msb_t) const;
     void checkEqual(const Approximated<Bvec>& approxRes, const Approximated<Bvec>& orig);
     void checkEqual(const Approximated<Bvec>& approxRes, const std::function<Approximated<Bvec>()> &op);
     Approximated<Bvec> shiftNumeral(const z3::expr &e, const std::vector<boundVar> &, int );
