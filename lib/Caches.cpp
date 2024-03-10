@@ -2,6 +2,7 @@
 #include "IntervalTester.h"
 
 
+
 #define DEBUG false
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
@@ -181,6 +182,27 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
     }
 }
 
-void Caches::setCurrentBWasPrevBW() {
+void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context& context) {
+    if (type == ALL_OPS) {
         prevBWpreciseBvecs = sameBWPreciseBvecs;
+    } else if (type == NO_OPS) {
+        prevBWpreciseBvecs.clear();
+    } else {
+        prevBWpreciseBvecs.clear();
+        // only demanding operations stay in cache -- sofar +, -
+        std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BSUB};
+        for (auto [key, val] : sameBWPreciseBvecs) {
+            // tbd
+            auto e = z3::to_expr(context, key);
+            if (e.is_app()) {
+                z3::func_decl f = e.decl();
+	            auto decl_kind = f.decl_kind();
+                if (declKinds.find(decl_kind) != declKinds.end()) {
+                    prevBWpreciseBvecs.insert({key, val});
+                }
+            }
+        }
+    }
+    
+    
 }

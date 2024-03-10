@@ -3,6 +3,7 @@
 enum ApproximationMethod { NONE, VARIABLES, OPERATIONS, BOTH };
 enum ReorderType { NO_REORDER, WIN2, WIN2_ITE, WIN3, WIN3_ITE, SIFT, SIFT_ITE };
 enum Approximations { NO_APPROXIMATIONS, ONLY_UNDERAPPROXIMATIONS, ONLY_OVERAPPROXIMATIONS, ALL_APPROXIMATIONS};
+enum IntervalRecomputationType {NO_OPS, ALL_OPS, DEMANDING_OPS};
 
 struct Config
 {
@@ -27,4 +28,5 @@ struct Config
     bool validatingSolver = false;
 
     bool lazyEvaluation = false;
+    IntervalRecomputationType interval_recomputation = ALL_OPS;
 };

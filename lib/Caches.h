@@ -11,6 +11,7 @@
 #include <cuddObj.hh>
 #include "cudd/bvec_cudd.h"
 #include "BDDInterval.h"
+#include "Config.h"
 
 
 enum BoundType { EXISTENTIAL, UNIVERSAL };
@@ -65,7 +66,7 @@ class Caches
     void pruneBvecCache(const std::vector<boundVar>& );
     void pruneBddCache(const std::vector<boundVar>& );
 
-    void setCurrentBWasPrevBW();
+    void setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context& context);
 
     std::string to_string() {
         std::stringstream ss;

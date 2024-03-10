@@ -140,7 +140,7 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     if (lastBW != variableBitWidth) {   // bitWidth changed
         incrementedApproxStyle = BIT_WIDTH;
         caches.variableBitWidth = variableBitWidth;
-        caches.setCurrentBWasPrevBW();  // coppies precise bvec, so the can be used in further computation
+        caches.setCurrentBWasPrevBW(config.interval_recomputation, *context);  // coppies precise bvec, so the can be used in further computation
         caches.clearCurrentBwCaches();
         lastBW = variableBitWidth;
     } else {
@@ -838,12 +838,12 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
 bool ExprToBDDTransformer::ApproximateOps() const
 {   
     return operationPrecision != 0 && 
-        ( (config.approximationMethod == BOTH && incrementedApproxStyle == PRECISION ) || (config.approximationMethod == OPERATIONS));
+        ( (config.approximationMethod == BOTH && (incrementedApproxStyle == PRECISION || config.interval_recomputation == NO_OPS)) || (config.approximationMethod == OPERATIONS));
 }
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (true && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
+    return (config.interval_recomputation != NO_OPS && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
