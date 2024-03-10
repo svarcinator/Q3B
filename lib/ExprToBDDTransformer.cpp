@@ -1051,17 +1051,13 @@ Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector
         
         return res;
     } else if (ApproximateVars()) {
-        
-        auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
-        unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-        
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        auto prevBvecState = Caches::getstateFromBvec(prevBvec);
+        unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;      
         auto res = bvec_assocOpApprox(
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_add_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
-        
-        
-
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true); // always creating new state that is not in state cache
     
         if (DEBUG) {

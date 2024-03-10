@@ -64,7 +64,7 @@ struct Computation_state
 
     bool IsFresh() const
     {
-        return (m ==0 && (intervals.back().second == 0) && preciseBdds == 0 && bitvec.empty() && remainder.empty() && div.empty());
+        return  (m ==0  && preciseBdds == 0 && bitvec.empty() && remainder.empty() && div.empty());
     }
     
 };

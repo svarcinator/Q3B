@@ -359,6 +359,7 @@ Bvec Bvec::bvec_add_nodeLimit(const Bvec &left, const Bvec &right, unsigned int 
     }
     if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
+        state.intervals = {{INT_MAX, 0}};
     }
 
     MaybeBDD carry = MaybeBDD(manager.bddZero());
@@ -406,6 +407,7 @@ Bvec Bvec::bvec_sub(const Bvec &left, const Bvec &right, unsigned int nodeLimit,
     }
     if (state.IsFresh()){
         state.bitvec = std::vector<MaybeBDD>(left.bitnum(), MaybeBDD());
+        state.intervals = {{INT_MAX, 0}};
     } 
     MaybeBDD carry = MaybeBDD(manager.bddZero());
     for (Interval& interval : state.intervals) {
