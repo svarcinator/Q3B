@@ -836,7 +836,14 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
         return res;
     } else if (ApproximateVars()) {
         unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-        return  Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
+        auto res = Bvec::bvec_mul_nodeLimit_state(arg0, arg1, nodeLimit, state).bvec_coerce(bitNum);
+
+        if (DEBUG) {
+            unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
+            auto res2 =   Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
+            BvecTester::testBvecEq(res, res2);
+        }
+        return res;
     }
     return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);
 }
@@ -1214,12 +1221,31 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
 {
     checkNumberOfArguments<2>(e);   // in preprocessing adjusted so that mul has always 2 args
 
-    auto state = caches.findStateInCaches(e, boundVars);
-    bool createdFreshState = state.IsFresh();
-    auto res = bvec_assocOp(
+    if (ApproximateOps()) {
+        auto state = caches.findStateInCaches(e, boundVars);
+        bool createdFreshState = state.IsFresh();
+        auto res = bvec_assocOp(
             e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
-    caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-    return res;
+        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+        return res;
+    }
+    else if (ApproximateVars()) {
+        auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        auto resInterval= BWChangeEffect::EffectOnAddorSub(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
+        caches.insertInterval(e,resInterval );
+        prevBvecState.intervals = resInterval;
+        auto res = bvec_assocOp(
+            e, [&](auto x, auto y) { return bvec_mul(x, y, prevBvecState); }, boundVars);
+        caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true);
+        return res;
+
+    } else {
+        Computation_state state = Computation_state();
+        return bvec_assocOp(
+            e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
+        
+
+    }
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getDivOrRem(const expr &e, const vector<boundVar> &boundVars)
