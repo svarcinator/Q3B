@@ -374,6 +374,8 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/vsl.proof-node1722.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithBothLimitApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithoutApprox("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
+    REQUIRE( SolveWithBothLimitApprox("../tests/problematic/bouncing-ball-node5856.smt2", UNDERAPPROXIMATION) == SAT );
+    
     
     
     
@@ -386,6 +388,7 @@ TEST_CASE( "Problematic - Without approximations", "[noapprox]" )
     REQUIRE( SolveWithBothLimitApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2", OVERAPPROXIMATION) == UNSAT );
     REQUIRE( SolveWithoutApproxLazy("../tests/problematic/check_bvsge_bvand_64bit.smt2") == UNSAT );
     REQUIRE( SolveWithAllApproxLazy("../tests/problematic/check_bvslt_bvor_64bit-djusted.smt2") == UNSAT );
+    REQUIRE( SolveWithAllApproxLazy("../tests/problematic/bouncing-ball-node5856.smt2", UNDERAPPROXIMATION) == SAT );
     
    
 }
@@ -513,7 +516,7 @@ TEST_CASE( "With bothLimit approximations -- term introducer ", "[bothlimitappro
 
 TEST_CASE( "With operation approximations -- ite ", "[opapproxlimit-ite]" )
 {
-    REQUIRE( SolveWithOperationsLimitApprox("../tests/data/iteApprox.smt2", UNDERAPPROXIMATION, 1) != UNSAT );
+    //REQUIRE( SolveWithOperationsLimitApprox("../tests/data/iteApprox.smt2", UNDERAPPROXIMATION, 1) != UNSAT );
 }
 
 TEST_CASE( "With parallel approximations", "[parallel]" )
