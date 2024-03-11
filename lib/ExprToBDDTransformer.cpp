@@ -827,7 +827,13 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
     }
 
     if ( ApproximateOps() ){
-        return Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
+        auto res =  Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
+        if (DEBUG) {
+            unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
+            auto res2 =   Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
+            BvecTester::testBvecEq(res, res2);
+        }
+        return res;
     } else if (ApproximateVars()) {
         unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
         return  Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
@@ -843,7 +849,7 @@ bool ExprToBDDTransformer::ApproximateOps() const
 
 bool ExprToBDDTransformer::ApproximateVars() const
 {
-    return (config.interval_recomputation != NO_OPS && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
+    return ( config.interval_recomputation != NO_OPS && (config.approximationMethod == VARIABLES  || (config.approximationMethod == BOTH && incrementedApproxStyle == BIT_WIDTH )));
 }
 
 
@@ -957,7 +963,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::bvec_map1_prev(x,changeInterval, [&](const MaybeBDD &a) { return !a; }, prevBvec.value().value); },
             [&](auto x) {return BWChangeEffect::EffectOnKid(x);}, 
             boundVars); // same effect (interval) as on child
-            //checkEqual(res,[&]() {return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);}  ); //tests res if DEBUG == true
+            checkEqual(res,[&]() {return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);}  ); //tests res if DEBUG == true
             return res;
         }  
     }
@@ -974,8 +980,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBNeg(const expr &e, const vector<bou
             [&](auto x , std::vector<Interval> changeInterval ) { return Bvec::arithmetic_neg_prev(x,changeInterval, prevBvecState); },
             [&](auto x) {return BWChangeEffect::EffectFromLeastSignChangedBit(x);}, 
             boundVars); 
-            // checkEqual(result,  [&] () {return bvec_unOp(
-            //         e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);});
+            checkEqual(result,  [&] () {return bvec_unOp(
+                    e, [&](auto x) { return Bvec::arithmetic_neg(x); }, boundVars);});
             
             return result;
         }  
@@ -993,8 +999,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBOr(const expr &e, const vector<boun
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a | b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            // checkEqual(res, [&](){return bvec_assocOp(
-            //         e, [&](const Bvec &a, const Bvec &b) { return a | b; }, boundVars);});
+            checkEqual(res, [&](){return bvec_assocOp(
+                    e, [&](const Bvec &a, const Bvec &b) { return a | b; }, boundVars);});
             return res;
         }
         
@@ -1011,8 +1017,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBAnd(const expr &e, const vector<bou
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a & b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            // checkEqual(res, [&](){return bvec_assocOp(
-            //         e, [&](const Bvec &a, const Bvec &b) { return a & b; }, boundVars);});
+            checkEqual(res, [&](){return bvec_assocOp(
+                    e, [&](const Bvec &a, const Bvec &b) { return a & b; }, boundVars);});
             return res;
         }
         
@@ -1029,8 +1035,8 @@ Approximated<Bvec> ExprToBDDTransformer::getBXor(const expr &e, const vector<bou
             e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
             { return Bvec::bvec_map2_prev(x, y,changeInterval, [&](const MaybeBDD &a, const MaybeBDD &b) { return a ^ b; },  prevBvec.value().value); },
                 [](auto x, auto y) {return BWChangeEffect::EffectOfUnion(x, y);},boundVars);
-            // checkEqual(res, [&]() {return bvec_assocOp(
-            //         e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);});
+             checkEqual(res, [&]() {return bvec_assocOp(
+                     e, [&](const Bvec &a, const Bvec &b) { return a ^ b; }, boundVars);});
             return res;
         }
         
@@ -1236,9 +1242,20 @@ Approximated<Bvec> ExprToBDDTransformer::getDivOrRem(const expr &e, const vector
             operationPrecision != 0) {
         auto state = caches.findStateInCaches(e, boundVars);
         bool createdFreshState = state.IsFresh();
+        auto div_cp = div;
+        auto rem_cpy = rem;
         result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
+        if (DEBUG) {
+            auto res = Bvec::bvec_div_nodeLimit_orig(arg0, arg1, div_cp, rem_cpy, precisionMultiplier * operationPrecision, state);
+            std::cout << "div" << std::endl;
+            BvecTester::testBvecEq(div, div_cp);
+            std::cout << "rem" << std::endl;
+            BvecTester::testBvecEq( rem,rem_cpy );
+
+
+        }
         if (result == 0) {
-            caches.insertStateIntoCaches(e, state, boundVars, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, createdFreshState);
+            caches.insertStateIntoCaches(e, state, boundVars, { (decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) ? div : rem, opPrecision, varPrecision }, createdFreshState);
         }
     } else {
         result = arg0.bvec_div(arg0, arg1, div, rem);

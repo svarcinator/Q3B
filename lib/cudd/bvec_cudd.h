@@ -186,6 +186,10 @@ class Bvec
 
     static int
     bvec_div_nodeLimit(const Bvec &left, const Bvec &right, Bvec &result, Bvec &rem, unsigned int, Computation_state &);
+    
+    static int 
+    bvec_div_nodeLimit_orig(const Bvec &, const Bvec &, Bvec &, Bvec &, unsigned int , Computation_state &);
+
 
     static void
     ite_body(const MaybeBDD &val, const Bvec &left, const Bvec &right, unsigned int , Computation_state& , Interval&  );
