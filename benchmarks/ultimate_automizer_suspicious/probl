@@ -1,0 +1,66 @@
+(forall ((|2| (_ BitVec 32)) (|3| (_ BitVec 32)) (|4| (_ BitVec 32)))
+  (! (let ((a!1 (bvadd (concat #x01 ((_ extract 23 0) |4|))
+                       (bvlshr (concat #x01 ((_ extract 23 0) |2|)) |3|))))
+       (or (not (= ((_ extract 23 0) |0|) ((_ extract 24 1) a!1)))
+           (not (= ((_ extract 31 25) a!1) #b0000001))))
+     :weight 0))
+     
+     
+     
+     (bvadd (concat #x01 ((_ extract 23 0) |4|))
+                       (bvlshr (concat #x01 ((_ extract 23 0) |2|)) |3|))
+                       
+                       
+(set-info :status unknown)
+(declare-fun |c_ULTIMATE.start_addflt_~ma~0#1| () (_ BitVec 32))
+(declare-fun |c_ULTIMATE.start_addflt_~mb~0#1| () (_ BitVec 32))
+
+(assert (exists ((|x| (_ BitVec 32))) 
+  (= (bvor (bvand |x| (_ bv16777215 32)) (_ bv16777216 32)) |c_ULTIMATE.start_addflt_~ma~0#1|)) 
+(assert (exists ((|y| (_ BitVec 32))) 
+  (= (bvor (_ bv16777216 32) (bvand |y| (_ bv16777215 32))) |c_ULTIMATE.start_addflt_~mb~0#1|)))
+
+(assert (not (exists ((|ULTIMATE.start_addflt_~b#1| (_ BitVec 32)) (|ULTIMATE.start_addflt_~delta~0#1| (_ BitVec 32)) (|ULTIMATE.start_addflt_~a#1| (_ BitVec 32))) (= |c_ULTIMATE.start_addflt_~ma~0#1| (bvlshr (bvadd (bvor (bvand |ULTIMATE.start_addflt_~a#1| (_ bv16777215 32)) (_ bv16777216 32)) (bvlshr (bvor (_ bv16777216 32) (bvand |ULTIMATE.start_addflt_~b#1| (_ bv16777215 32))) |ULTIMATE.start_addflt_~delta~0#1|)) (_ bv1 32))))))
+(check-sat)
+(exit)
+
+16777215 = 0000000001111111111111111111111111
+16777216 = 0000000010000000000000000000000000
+           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           000000000xxxxxxxxxxxxxxxxxxxxxxxxx
+           
+           000000001xxxxxxxxxxxxxxxxxxxxxxxxx
+           
+           16777215 = 0000000001111111111111111111111111
+16777216 = 0000000010000000000000000000000000
+           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           000000000xxxxxxxxxxxxxxxxxxxxxxxxx
+           
+           000000001xxxxxxxxxxxxxxxxxxxxxxxxx
+           
+           
+           (forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (bvlshr (bvor (_ bv16777216 32) (bvand |w| (_ bv16777215 32))) |v|)) (_ bv1 32)))))
+           
+           (forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (bvlshr (bvor (_ bv16777216 32) (3)) |v|)) (_ bv1 32)))))
+           
+           (forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (5)) (_ bv1 32)))))
+
+
+
+(forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (bvlshr (bvor (_ bv16777216 32) (bvand |w| (_ bv16777215 32))) |v|)) (_ bv1 32)))))
+           
+           (forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (bvlshr (bvor (_ bv16777216 32) (3)) |v|)) (_ bv1 32)))))
+           
+           (forall ((|w| (_ BitVec 32)) (|v| (_ BitVec 32)) (|x| (_ BitVec 32))) (not (= |y| (bvlshr (bvadd (2) (bvlshr (4) |v|)) (_ bv1 32)))))
+           
+           
+
+(forall ((|1| (_ BitVec 32)) (|2| (_ BitVec 32)) (|3| (_ BitVec 32)))
+  (! (let ((a!1 (bvadd (concat #x01 ((_ extract 23 0) |3|))
+                       (bvlshr (concat #x01 ((_ extract 23 0) |1|)) |2|))))
+       (or (not (= ((_ extract 31 25) a!1) #b0000001))
+           (not (= ((_ extract 23 0) |0|) ((_ extract 24 1) a!1)))))
+     :weight 0))
+
+
+
