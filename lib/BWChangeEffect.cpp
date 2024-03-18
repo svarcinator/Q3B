@@ -19,7 +19,7 @@ using namespace z3;
 std::vector<Interval> BWChangeEffect::EffectOnVar(int newBW, uint bitCount,unsigned int operationPrecision )
 {
     if (newBW <= 2 || (operationPrecision == 2 && newBW == 128) ) {
-        return {{bitCount, 0}};
+        return {{bitCount -1, 0}};
     }
     
     assert(newBW != 0 && newBW % 2 == 0);

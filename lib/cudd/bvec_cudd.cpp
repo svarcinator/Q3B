@@ -492,9 +492,9 @@ bool Bvec::add_leftshift_to_result(Bvec const &leftshift,
     };
     Cudd &manager = *right.m_manager; // manager was checked in multiplication_body
     auto state_cpy = state;
-    std::cout << "state_cpy pre" << state_cpy.toString() << std::endl; 
+    //std::cout << "state_cpy pre" << state_cpy.toString() << std::endl; 
     Bvec added = bvec_add_nodeLimit(Bvec(manager, state.bitvec), leftshift, UINT_MAX, state_cpy);
-    std::cout << "state_cpy post" << state_cpy.toString() << std::endl; 
+    //std::cout << "state_cpy post" << state_cpy.toString() << std::endl; 
     while (state.m < right.bitnum()) {
         state.bitvec[state.m] = right[i].Ite(added[state.m], state.bitvec[state.m]);
         if (reachedLimit(state.bitvec[state.m])) {

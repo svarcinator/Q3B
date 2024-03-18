@@ -60,6 +60,7 @@ class ExprToBDDTransformer
     BDDInterval getBDDFromExpr(const z3::expr &, const std::vector<boundVar> &, bool onlyExistentials, bool isPositive);
     Approximated<Bvec> getApproximatedVariable(const std::string &, int, const ApproximationType &);
     Approximated<Bvec> getBvecFromExpr(const z3::expr &, const std::vector<boundVar> &);
+    Approximated<Bvec> updateApproximatedVariable(const std::string &varName, Approximated<Bvec> prevBvec,  const std::vector<Interval> intervals);
 
     
     uint posToEvaluate(const z3::expr &, const z3::expr &);
