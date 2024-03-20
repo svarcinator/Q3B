@@ -10,7 +10,7 @@
 #include <list>
 #include <sstream>
 
-#define DEBUG false
+#define DEBUG true
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -932,7 +932,7 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
         auto intervals = BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum(), operationPrecision);
         caches.insertInterval(e, intervals ); // latter arg is number of bits of the var
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-        if ( prevBvec.has_value()) {
+        if (  prevBvec.has_value()) {
             auto res = updateApproximatedVariable(bVar.first, prevBvec.value(), intervals);
             return caches.insertIntoCaches(e,res, boundVars);
         }
