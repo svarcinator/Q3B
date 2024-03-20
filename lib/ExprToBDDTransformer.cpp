@@ -486,10 +486,11 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
         }
     } else if (at == SIGN_EXTEND && rightBits != 0) {
         for (unsigned int i = rightBits; i < var.bitnum() - leftBits; i++) {
-            var.set(i, var[i - 1]);
+            // var.set(i, var[i - 1]);
+            var.set(i, var[0]);
         }
     } else if (at == SIGN_EXTEND && rightBits == 0) {
-        // when does this happen if newBitWidth is always even non zero number? BW = -1
+        // when does this happen? -> if BW = -1 or BW = 1
         for (int i = var.bitnum() - leftBits - 1; i >= 0; i--) {
             var.set(i, var[i + 1]);
         }
