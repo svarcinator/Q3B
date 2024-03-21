@@ -10,7 +10,7 @@
 #include <list>
 #include <sstream>
 
-#define DEBUG true
+#define DEBUG false
 
 const unsigned int precisionMultiplier = 1000;
 
