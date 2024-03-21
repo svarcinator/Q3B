@@ -98,12 +98,6 @@ expr ExprSimplifier::Simplify(expr expression)
     }
 
 
-    if (DEBUG)
-    {
-    std::cout << std::endl << std::endl << "reordered:" << std::endl;
-    std::cout << expression << std::endl;
-    }
-
     context->check_error();
     clearCaches();
     return expression;
