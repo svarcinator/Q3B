@@ -911,15 +911,7 @@ void ExprToBDDTransformer::checkEqual(const Approximated<Bvec>& approxRes, const
     }
 }
 
-Approximated<Bvec> ExprToBDDTransformer::updateApproximatedVariable(const std::string &varName,   Approximated<Bvec> prevBvec,  const std::vector<Interval> intervals) {
-    Bvec var = vars.at(varName);
-    for(auto interval : intervals) {
-        for (int i = interval.second; i <= interval.first; ++i) {
-            prevBvec.value.m_bitvec[i] = var.m_bitvec[i];
-        }
-    }
-    return prevBvec;
-}
+
 ///////////////////////////  Functions called in ExprToBDDTransformer::getBvecFromExpr /////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -931,12 +923,7 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
 
     if (shouldApproximateVar(bVar)) {
         auto intervals = BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum(), operationPrecision);
-        caches.insertInterval(e, intervals ); // latter arg is number of bits of the var
-        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-        if (  prevBvec.has_value()) {
-            auto res = updateApproximatedVariable(bVar.first, prevBvec.value(), intervals);
-            return caches.insertIntoCaches(e,res, boundVars);
-        }
+        caches.insertInterval(e, intervals ); // latter arg is number of bits of the var       
         auto res = getApproximatedVariable(bVar.first, variableBitWidth, approximationType);
         return caches.insertIntoCaches(e,res, boundVars);
     }
@@ -952,12 +939,6 @@ Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<bo
 
         auto intervals = BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(expressionString).bitnum(), operationPrecision);
         caches.insertInterval(e, intervals ); // latter arg is number of bits of the var
-        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
-        if ( prevBvec.has_value()) {
-            auto res = updateApproximatedVariable(expressionString, prevBvec.value(), intervals);
-            return caches.insertIntoCaches(e,res, boundVars);
-        }
-
         auto result = getApproximatedVariable(expressionString, variableBitWidth, approximationType);
         return caches.insertIntoCaches(e, result, boundVars);
     }
