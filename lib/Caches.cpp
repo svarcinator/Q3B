@@ -193,6 +193,9 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
         std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BSUB};
         for (auto [key, val] : sameBWPreciseBvecs) {
             // tbd
+            std::cout << "expr = " << Z3_get_ast_kind(context, key) << std::endl;
+            if (Z3_get_ast_kind(context, key) == 1000)
+                continue;
             auto e = z3::to_expr(context, key);
             if (e.is_var() || e.is_const()) {
                 prevBWpreciseBvecs.insert({key, val});
