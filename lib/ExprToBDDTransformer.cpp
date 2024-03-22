@@ -10,7 +10,7 @@
 #include <list>
 #include <sstream>
 
-#define DEBUG true
+#define DEBUG false
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -774,8 +774,6 @@ bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
 ///////////////////////////  Help Functions ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, std::vector<Interval> interval,  Computation_state &state) {
     state.intervals = interval;
-    std::cout << " multiplic state " << state.toString() << std::endl;
-    //state.intervals = {{INT_MAX, 0}};
     return  bvec_mul(arg0, arg1, state);
 }
 
@@ -1132,7 +1130,6 @@ Approximated<Bvec>  ExprToBDDTransformer::getCurrentBvec(const expr &e, const ve
     if ( true &&ApproximateVars() ){
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         if ( prevBvec.has_value() ) {
-            //std::cout << "Number of items in prevBWpreciseBvecs cahce "  << caches.prevBWpreciseBvecs.size() << std::endl;
             wasCurrentCached = true;
             return prevBvec.value();
         }
@@ -1252,11 +1249,6 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
 
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
-        // auto resInterval= BWChangeEffect::EffectOnAddorSub(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
-        // caches.insertInterval(e,resInterval );
-        // prevBvecState.intervals = resInterval;
-        //auto prevBvecState = Computation_state();
-        std::cout << "Has prev bvec value? " << prevBvec.has_value() << std::endl;
         auto res = bvec_assocOpApprox(
             e, [&](auto x, auto y, std::vector<Interval> changeInterval) { return bvec_mul(x, y, changeInterval, prevBvecState); }
                 , [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},
