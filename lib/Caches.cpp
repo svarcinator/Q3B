@@ -10,7 +10,8 @@ Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approxim
     bvecExprCache.insert({ (Z3_ast) expr, { bvec, boundVars } });
 
     if (bvec.value.isPrecise()) {   //isPresise iff does not contain ? value
-        sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
+        auto inserted = sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
+        std::cout <<expr.to_string() <<  " is inserted? " << inserted.second << std::endl;
         
     }
     return bvec;

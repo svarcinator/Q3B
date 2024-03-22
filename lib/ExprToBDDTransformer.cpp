@@ -10,7 +10,7 @@
 #include <list>
 #include <sstream>
 
-#define DEBUG false
+#define DEBUG true
 
 const unsigned int precisionMultiplier = 1000;
 
@@ -774,6 +774,8 @@ bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
 ///////////////////////////  Help Functions ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, std::vector<Interval> interval,  Computation_state &state) {
     state.intervals = interval;
+    std::cout << " multiplic state " << state.toString() << std::endl;
+    //state.intervals = {{INT_MAX, 0}};
     return  bvec_mul(arg0, arg1, state);
 }
 
@@ -1246,20 +1248,24 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
         return res;
     }
     else if (ApproximateVars()) {
-        auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        //auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+
+        auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
+        auto prevBvecState = Caches::getstateFromBvec(prevBvec);
         // auto resInterval= BWChangeEffect::EffectOnAddorSub(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
         // caches.insertInterval(e,resInterval );
         // prevBvecState.intervals = resInterval;
         //auto prevBvecState = Computation_state();
-        // auto res = bvec_assocOpApprox(
-        //     e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
-        //     { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
-        //         [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
-
+        std::cout << "Has prev bvec value? " << prevBvec.has_value() << std::endl;
         auto res = bvec_assocOpApprox(
             e, [&](auto x, auto y, std::vector<Interval> changeInterval) { return bvec_mul(x, y, changeInterval, prevBvecState); }
                 , [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},
                 boundVars);
+        if (DEBUG) {
+            Computation_state state = Computation_state();
+            BvecTester::testAddOrSub(res, bvec_assocOp(
+            e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars), prevBvecState);
+        }
         caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true);
         return res;
 

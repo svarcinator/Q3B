@@ -565,6 +565,7 @@ Bvec Bvec::bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigne
 
     if (state.IsFresh()) {
         state.bitvec = std::vector<MaybeBDD>(bitnum, MaybeBDD(manager.bddZero()));
+        state.intervals = { { INT_MAX, 0 } };
     }
 
     if (left.bitnum() == 0 || right.bitnum() == 0) {
