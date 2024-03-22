@@ -190,7 +190,7 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
     } else {
         prevBWpreciseBvecs.clear();
         // only demanding operations stay in cache -- sofar +, -
-        std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BSUB};
+        std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BSUB, Z3_OP_BMUL};
         for (auto [key, val] : sameBWPreciseBvecs) {
             // tbd
             std::cout << "expr = " << Z3_get_ast_kind(context, key) << std::endl;
