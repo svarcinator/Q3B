@@ -115,6 +115,7 @@ class ExprToBDDTransformer
     Bvec computeConcat(const z3::expr &e,  Bvec , const Bvec& , int , int , bool , std::vector<Interval>&  );
     Approximated<Bvec> getExtractBvec(const z3::expr &e, const std::vector<boundVar> &boundVars, int bitFrom,int extractBits ) ;
     Approximated<Bvec> getCurrentBvec(const z3::expr &e, const std::vector<boundVar> &boundVars, int, bool& )  ;
+    Bvec bvec_mul(Bvec &arg0, Bvec &arg1, std::vector<Interval> interval,  Computation_state &state);
     Bvec bvec_mul(Bvec &, Bvec &, Computation_state &);
     bool ApproximateOps() const;
     bool ApproximateVars() const;

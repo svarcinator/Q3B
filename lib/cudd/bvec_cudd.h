@@ -164,6 +164,8 @@ class Bvec
     multiplication_body(Bvec& leftshift, const Bvec& right, unsigned int , const size_t , Computation_state& , Interval& );
 
     static Bvec
+    bvec_mul_nodeLimit_state_prev(const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
+    static Bvec
     bvec_mul_nodeLimit_state(const Bvec &left, const Bvec &right, unsigned int, Computation_state &);
 
     static Bvec

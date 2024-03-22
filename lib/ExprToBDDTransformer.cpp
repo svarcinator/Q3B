@@ -772,6 +772,11 @@ bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////  Help Functions ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, std::vector<Interval> interval,  Computation_state &state) {
+    state.intervals = interval;
+    return  bvec_mul(arg0, arg1, state);
+}
+
 Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &state)
 {
     unsigned int bitNum = arg0.bitnum();
@@ -837,9 +842,8 @@ Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &s
         }
         return res;
     } else if (ApproximateVars()) {
-        //state = Computation_state(); // zatim anuluje intervaly -- jsou anulovany uz predtim
         unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-        auto res = Bvec::bvec_mul_nodeLimit_state(arg0, arg1, nodeLimit, state).bvec_coerce(bitNum);
+        auto res = Bvec::bvec_mul_nodeLimit_state_prev(arg0, arg1, nodeLimit, state).bvec_coerce(bitNum);
 
         if (DEBUG) {
             unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
@@ -1242,14 +1246,21 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
         return res;
     }
     else if (ApproximateVars()) {
-        // auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
+        auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
         // auto resInterval= BWChangeEffect::EffectOnAddorSub(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
         // caches.insertInterval(e,resInterval );
         // prevBvecState.intervals = resInterval;
-        auto prevBvecState = Computation_state();
-        auto res = bvec_assocOp(
-            e, [&](auto x, auto y) { return bvec_mul(x, y, prevBvecState); }, boundVars);
-        //caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true);
+        //auto prevBvecState = Computation_state();
+        // auto res = bvec_assocOpApprox(
+        //     e, [&](auto x, auto y , std::vector<Interval> changeInterval ) 
+        //     { return Bvec::bvec_sub_prev(x, y,changeInterval, prevBvecState, nodeLimit); },
+        //         [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},boundVars);
+
+        auto res = bvec_assocOpApprox(
+            e, [&](auto x, auto y, std::vector<Interval> changeInterval) { return bvec_mul(x, y, changeInterval, prevBvecState); }
+                , [](auto x, auto y) {return BWChangeEffect::EffectOnAddorSub(x, y);},
+                boundVars);
+        caches.insertStateIntoCaches(e, prevBvecState, boundVars, res, true);
         return res;
 
     } else {
