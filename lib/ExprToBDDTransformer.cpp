@@ -1519,6 +1519,7 @@ template <typename Top, typename TisDefinite, typename TdefaultResult>
     {
         
         std::vector<BDDInterval> bddSubResults;
+        auto toReturn = defaultResult;
 
         for (unsigned int i = 0; i < arguments.size(); i++) {
             if (isInterrupted()) {
@@ -1531,6 +1532,12 @@ template <typename Top, typename TisDefinite, typename TdefaultResult>
             if (!bddSubResults.empty() && isDefinite(bddSubResults.back())) {
                 return bddSubResults.back();
             }
+            if (config.lazyEvaluation) {
+                toReturn = op(toReturn, bddSubResults.back());
+                if (isDefinite(toReturn)) {
+                    return toReturn;
+                }
+            }
         }
 
         if (bddSubResults.empty()) {
@@ -1539,9 +1546,11 @@ template <typename Top, typename TisDefinite, typename TdefaultResult>
 
         if (!config.lazyEvaluation ) {
             sortVec(bddSubResults);
+        } else {
+            return toReturn;
         }
 
-        auto toReturn = defaultResult;
+        
         for (auto &argBdd : bddSubResults) {
             if (isInterrupted()) {
                 return defaultResult;

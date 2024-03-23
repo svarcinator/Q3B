@@ -37,7 +37,13 @@ unsigned int ExpensiveOp::getExpensiveOpNum(const z3::expr&e) {
         
 		if (expensive_ops_set.find(decl_kind) != expensive_ops_set.end() ) 
 		{
-			exp_ops_sum += 1;
+			if (decl_kind == Z3_OP_BMUL) {
+				exp_ops_sum += 1;
+				exp_ops_sum *= 5;
+			} else {
+				exp_ops_sum += 1;
+			}
+			
 		}
 	}
     expOpCache.insert(std::make_pair((Z3_ast)e, uint(exp_ops_sum)));
