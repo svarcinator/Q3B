@@ -170,12 +170,12 @@ BDDInterval ExprToBDDTransformer::getDisjunctionBdd(const vector<expr> &argument
             arguments, boundVars, onlyExistentials, isPositive, [](auto &a, auto &b) { return a + b; }, [](const auto a) { return a.lower.IsOne(); }, BDDInterval{ bddManager.bddZero() });
 }
 
-uint ExprToBDDTransformer::posToEvaluate(const z3::expr &e1, const z3::expr &e2)
+uint ExprToBDDTransformer::posToEvaluate(const z3::expr &e0, const z3::expr &e1)
 {
     ExpensiveOp opCounter;
+    auto n0 = opCounter.getExpensiveOpNum(e0);
     auto n1 = opCounter.getExpensiveOpNum(e1);
-    auto n2 = opCounter.getExpensiveOpNum(e2);
-    return (n1 <= n2) ? 1 : 0;
+    return (n0 <= n1) ? 0 : 1;
 }
 
 BDDInterval ExprToBDDTransformer::getImplSubBDD(const uint pos, const z3::expr &e, const vector<boundVar> &boundVars, bool onlyExistentials, bool isPositive)
@@ -270,11 +270,11 @@ BDDInterval ExprToBDDTransformer::getBDDFromExpr(const expr &e, const vector<bou
             BDDInterval result;
 
             if (config.lazyEvaluation) {
-                auto posToEval = posToEvaluate(e.arg(0), e.arg(1));
-                result = getImplSubBDD(posToEval, e.arg(posToEval), boundVars, onlyExistentials, isPositive);
-                if (!result.lower.IsOne()) {
-                    result = result + getImplSubBDD(1 - posToEval, e.arg(1 - posToEval), boundVars, onlyExistentials, isPositive);
-                }
+                assert(false);
+                vector<expr> arguments;
+                arguments.push_back(not(e.arg(0)));
+                arguments.push_back(e.arg(1));
+                result = getDisjunctionBdd(arguments, boundVars, onlyExistentials, isPositive);
             } else {
                 result = !getBDDFromExpr(e.arg(0), boundVars, onlyExistentials, !isPositive) +
                         getBDDFromExpr(e.arg(1), boundVars, onlyExistentials, isPositive);
