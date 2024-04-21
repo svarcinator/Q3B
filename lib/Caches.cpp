@@ -198,7 +198,7 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
                 continue;
             auto e = z3::to_expr(context, key);
             if (e.is_var() || e.is_const()) {
-                prevBWpreciseBvecs.insert({key, val});
+                // prevBWpreciseBvecs.insert({key, val});
             } else if (e.is_app()) {
                 z3::func_decl f = e.decl();
 	            auto decl_kind = f.decl_kind();
