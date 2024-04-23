@@ -106,6 +106,15 @@ class ExprToBDDTransformer
     Approximated<Bvec> getConcatApproximated(const z3::expr &e, const std::vector<boundVar> &boundVars, const Approximated<Bvec>&);
 
     // helper funcs
+
+    bool shouldApproximate() const;
+    // Bvec performApproximateMultiplication(Bvec &a, Bvec &b, Computation_state &);
+    // int countConstantBits(const Bvec &vec) const;
+    // void optimizeBitHandling(Bvec &a, Bvec &b);
+    // unsigned int countTrailingZeros(unsigned int val);
+    // std::tuple<Bvec, bool> performOptimizedMultiplication(Bvec &a, Bvec &b);
+    // bool canUseOptimizedMultiplication(const Bvec &a, const Bvec &b);
+    // void handleNegativeOneSpecialCase(Bvec &a, Bvec &b);
     z3::expr getLastItePart(const z3::expr &e, z3::expr (*op)(const z3::expr &e1, const z3::expr &e2),
                                           const z3::expr &arg0, const z3::expr &arg1, const z3::expr &zero, const z3::expr &one,
                                           const z3::expr &msb_s, const z3::expr &msb_t) const;
@@ -133,7 +142,6 @@ class ExprToBDDTransformer
 
     
 
-    //bool variableApproximationHappened = false;
     bool operationApproximationHappened = false;
 
     int cacheHits = 0;
@@ -184,17 +192,7 @@ class ExprToBDDTransformer
     {
         approximationType = at;
     }
-    /*
-    bool IsPreciseResult()
-    {
-        return !variableApproximationHappened && !operationApproximationHappened;
-    }
-
-    bool VariableApproximationHappened()
-    {
-        return variableApproximationHappened;
-    }
-    */
+   
     bool OperationApproximationHappened()
     {
         return operationApproximationHappened;

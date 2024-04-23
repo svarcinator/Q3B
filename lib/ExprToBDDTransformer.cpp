@@ -4,6 +4,7 @@
 #include "HexHelper.h"
 #include "Solver.h"
 #include "BvecTester.h"
+#include "BvecMultiplier.cpp"
 
 #include <algorithm>
 #include <cmath>
@@ -469,13 +470,13 @@ Approximated<Bvec> ExprToBDDTransformer::getApproximatedVariable(const std::stri
         }
     } else if (at == SIGN_EXTEND && rightBits != 0) {
         for (unsigned int i = rightBits; i < var.bitnum() - leftBits; i++) {
-            // var.set(i, var[i - 1]);
-            var.set(i, var[var.bitnum() -1]);
+            var.set(i, var[i - 1]);
+            //var.set(i, var[var.bitnum() -1]);
         }
     } else if (at == SIGN_EXTEND && rightBits == 0) {
         // when does this happen? -> if BW = -1 or BW = 1
         for (int i = var.bitnum() - leftBits - 1; i >= 0; i--) {
-            var.set(i, var[var.bitnum() -1]);
+            var.set(i, var[i + 1]);
         }
     }
 
@@ -743,10 +744,7 @@ Approximated<Bvec> ExprToBDDTransformer::bvec_unOpApprox(const z3::expr &e, cons
     return caches.insertIntoCaches(e, result, boundVars);
 }
 
-bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
-{
-    return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.end(), [](auto &bit) { return bit.IsOne(); });
-}
+
 
 
 
@@ -755,84 +753,135 @@ bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////  Help Functions ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool ExprToBDDTransformer::shouldApproximate() const
+{
+    return ApproximateOps() || ApproximateVars();
+}
+
 Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &state)
 {
-    unsigned int bitNum = arg0.bitnum();
+    // Check for special cases with -1 which are equivalent to negation.
+    BvecMultiplier::handleNegativeOneSpecialCase(arg0, arg1);
 
-    if (isMinusOne(arg0)) {
-        Bvec::arithmetic_neg(arg1);
-    } else if (isMinusOne(arg1)) {
-        Bvec::arithmetic_neg(arg0);
-    }
-
-    Bvec result(bddManager);
-    if (arg0.bitnum() <= 32 && arg1.bitnum() <= 32) {
-        if (arg1.bvec_isConst()) {
-            swap(arg0, arg1);
-        }
-
-        if (arg0.bvec_isConst()) {
-            unsigned int val = arg0.bvec_val();
-
-            unsigned int largestDividingTwoPower = 0;
-            for (int i = 0; i < 64; i++) {
-                if (val % 2 == 0) {
-                    largestDividingTwoPower++;
-                    val = val >> 1;
-                }
-            }
-
-            if (largestDividingTwoPower > 0) {
-                result = (arg1 * val) << largestDividingTwoPower;
-                return result;
-            }
-
-            if (val <= INT_MAX) {
-                return arg1 * val;
-            }
+    if (BvecMultiplier::canUseOptimizedMultiplication(arg0, arg1)) {
+        auto [result, success] = BvecMultiplier::performOptimizedMultiplication(arg0, arg1);
+        if (success) {
+            return result;
         }
     }
+    // Swapping to ensure processing is done on the Bvec with fewer non-constant bits.
+    BvecMultiplier::optimizeBitHandling(arg0, arg1);
+    if (shouldApproximate()) {
 
-    int leftConstantCount = 0;
-    int rightConstantCount = 0;
-
-    for (unsigned int i = 0; i < arg0.bitnum(); i++) {
-        if (arg0[i].IsZero() || arg0[i].IsOne()) {
-            leftConstantCount++;
-        }
-
-        if (arg1[i].IsZero() || arg1[i].IsOne()) {
-            rightConstantCount++;
-        }
-    }
-
-    if (leftConstantCount < rightConstantCount) {
-        swap(arg0, arg1);
-    }
-
-    if ( ApproximateOps() ){
-        
-        auto res =  Bvec::bvec_mul_nodeLimit_state(arg0, arg1, precisionMultiplier * operationPrecision, state).bvec_coerce(bitNum);
+        unsigned int nodeLimit = (config.approximationMethod == VARIABLES) ? UINT_MAX : precisionMultiplier * operationPrecision;
+        auto result = BvecMultiplier::performApproximateMultiplication(arg0, arg1, state, nodeLimit);
         if (DEBUG) {
-            unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-            auto res2 =   Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
-            BvecTester::testBvecEq(res, res2);
+            auto res2 = Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(arg0.bitnum());
+            BvecTester::testBvecEq(result, res2);
         }
-        return res;
-    } else if (ApproximateVars()) {
-        //state = Computation_state(); // zatim anuluje intervaly -- jsou anulovany uz predtim
-        unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-        auto res = Bvec::bvec_mul_nodeLimit_state(arg0, arg1, nodeLimit, state).bvec_coerce(bitNum);
-
-        if (DEBUG) {
-            unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : UINT_MAX;
-            auto res2 =   Bvec::bvec_mul_nodeLimit(arg0, arg1, nodeLimit).bvec_coerce(bitNum);
-            BvecTester::testBvecEq(res, res2);
-        }
-        return res;
+        return result;
     }
-    return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);
+    return Bvec::bvec_mul(arg0, arg1).bvec_coerce(arg0.bitnum());
 }
+
+
+// bool ExprToBDDTransformer::isMinusOne(const Bvec &bvec)
+// {
+//     return std::all_of(bvec.m_bitvec.begin(), bvec.m_bitvec.end(), [](auto &bit) { return bit.IsOne(); });
+// }
+
+// void ExprToBDDTransformer::handleNegativeOneSpecialCase(Bvec &a, Bvec &b) {
+//     if (isMinusOne(a)) {
+//         Bvec::arithmetic_neg(b);
+//     } else if (isMinusOne(b)) {
+//         Bvec::arithmetic_neg(a);
+//     }
+// }
+
+// bool ExprToBDDTransformer::canUseOptimizedMultiplication(const Bvec &a, const Bvec &b) {
+//     return a.bitnum() <= 32 && b.bitnum() <= 32 && (a.bvec_isConst() || b.bvec_isConst());
+// }
+
+// std::tuple<Bvec, bool> ExprToBDDTransformer::performOptimizedMultiplication(Bvec &a, Bvec &b) {
+//     if (b.bvec_isConst()) {
+//         swap(a, b);
+//     }
+//     if (a.bvec_isConst()) {
+//         unsigned int val = a.bvec_val();
+//         unsigned int shiftCount = countTrailingZeros(val);
+//         val >>= shiftCount;
+//         if (shiftCount > 0){
+//             Bvec result = (b * val) << shiftCount;
+//             return {result, true};
+//         }
+        
+//         if (val <= INT_MAX) {
+//             return {b * val, true};
+//         }
+        
+//     }
+//     return {Bvec(bddManager), false};
+// }
+
+// unsigned int ExprToBDDTransformer::countTrailingZeros(unsigned int val) {
+//     unsigned int count = 0;
+//     for (; val % 2 == 0 && count < 64; ++count) {
+//         val >>= 1;
+//     }
+//     return count;
+// }
+
+// void ExprToBDDTransformer::optimizeBitHandling(Bvec &a, Bvec &b) {
+//     int leftConstantCount = countConstantBits(a);
+//     int rightConstantCount = countConstantBits(b);
+//     if (leftConstantCount < rightConstantCount) {
+//         swap(a, b);
+//     }
+// }
+
+// int ExprToBDDTransformer::countConstantBits(const Bvec &vec) const {
+//     int count = 0;
+//     for (unsigned int i = 0; i < vec.bitnum(); i++) {
+//         if (vec[i].IsZero() || vec[i].IsOne()) {
+//             count++;
+//         }
+//     }
+//     return count;
+// }
+
+// bool ExprToBDDTransformer::shouldApproximate() const{
+//     return ApproximateOps() || ApproximateVars();
+// }
+
+// Bvec ExprToBDDTransformer::performApproximateMultiplication(Bvec &a, Bvec &b, Computation_state &state) {
+
+//     unsigned int nodeLimit = (config.approximationMethod == VARIABLES) ? UINT_MAX : precisionMultiplier * operationPrecision;
+//     auto result = Bvec::bvec_mul_nodeLimit_state(a, b, nodeLimit, state).bvec_coerce(a.bitnum());
+//     return result;
+// }
+
+// Bvec ExprToBDDTransformer::bvec_mul(Bvec &arg0, Bvec &arg1, Computation_state &state)
+// {
+//     // Check for special cases with -1 which are equivalent to negation.
+//     handleNegativeOneSpecialCase(arg0, arg1);
+
+//     if (canUseOptimizedMultiplication(arg0, arg1)) {
+//         auto [result, success] = performOptimizedMultiplication(arg0, arg1);
+//         if (success) {
+//             return result;
+//         }
+        
+//     }
+//     // Swapping to ensure processing is done on the Bvec with fewer non-constant bits.
+//     optimizeBitHandling(arg0, arg1);
+
+    
+//     unsigned int bitNum = arg0.bitnum();
+//     if (shouldApproximate()) {
+//         return performApproximateMultiplication(arg0, arg1, state);
+//     }
+//     return Bvec::bvec_mul(arg0, arg1).bvec_coerce(bitNum);
+// }
 
 bool ExprToBDDTransformer::ApproximateOps() const
 {   
