@@ -835,12 +835,16 @@ void ExprToBDDTransformer::checkEqual(const Approximated<Bvec> &approxRes, const
 ///////////////////////////  Functions called in ExprToBDDTransformer::getBvecFromExpr /////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boundVar> &boundVars)
+boundVar ExprToBDDTransformer::extractBoundVar(const expr &e, const vector<boundVar> &boundVars)
 {
     Z3_ast ast = (Z3_ast) e;
     int deBruijnIndex = Z3_get_index_value(*context, ast);
-    boundVar bVar = boundVars[boundVars.size() - deBruijnIndex - 1];
+    return boundVars[boundVars.size() - deBruijnIndex - 1];
+}
 
+// Determines and handles the approximation of a variable
+Approximated<Bvec> ExprToBDDTransformer::handleVariableApproximation(const expr &e, const boundVar &bVar, const vector<boundVar> &boundVars)
+{
     if (shouldApproximateVar(bVar)) {
         auto intervals = BWChangeEffect::EffectOnVar(variableBitWidth, vars.at(bVar.first).bitnum(), operationPrecision);
         caches.insertInterval(e, intervals); // latter arg is number of bits of the var
@@ -848,6 +852,12 @@ Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boun
         return caches.insertIntoCaches(e, res, boundVars);
     }
     return caches.insertIntoCaches(e, { vars.at(bVar.first), PRECISE }, boundVars);
+}
+
+Approximated<Bvec> ExprToBDDTransformer::getVar(const expr &e, const vector<boundVar> &boundVars)
+{
+    boundVar bVar = extractBoundVar(e, boundVars);
+    return handleVariableApproximation(e, bVar, boundVars);
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getConst(const expr &e, const vector<boundVar> &boundVars)
@@ -885,8 +895,6 @@ Approximated<Bvec> ExprToBDDTransformer::getShiftRight(const expr &e, const vect
                 e, [](auto x, auto y) { return x >> y; }, boundVars);
     }
 }
-
-
 
 Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<boundVar> &boundVars)
 {
@@ -1169,11 +1177,45 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
     }
 }
 
+// Handle division or remainder when second argument is numeral and size constraints are met
+int ExprToBDDTransformer::handleNumeralDivision(const expr &e, const Bvec &arg0, Bvec &div, Bvec &rem)
+{
+    return arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
+}
+
+// Get either the division or remainder based on declaration kind
+Bvec ExprToBDDTransformer::getRelevantBvec(int decl_kind, const Bvec &div, const Bvec &rem)
+{
+    return (decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) ? div : rem;
+}
+
+// Perform division with node limits and handle debug checks
+int ExprToBDDTransformer::performDivWithNodeLimit(const expr &e, const Bvec &arg0, const Bvec &arg1, Bvec &div, Bvec &rem, const vector<boundVar> &boundVars, bool is_div_decl_kind, Precision opPrecision, Precision varPrecision)
+{
+    auto state = caches.findStateInCaches(e, boundVars);
+    bool createdFreshState = state.IsFresh();
+    auto div_cpy = div;
+    auto rem_cpy = rem;
+    auto result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
+    if (DEBUG) {
+        auto res = Bvec::bvec_div_nodeLimit_orig(arg0, arg1, div_cpy, rem_cpy, precisionMultiplier * operationPrecision, state);
+        std::cout << "div" << std::endl;
+        BvecTester::testBvecEq(div, div_cpy);
+        std::cout << "rem" << std::endl;
+        BvecTester::testBvecEq(rem, rem_cpy);
+    }
+    if (result == 0) {
+        caches.insertStateIntoCaches(e, state, boundVars, { (is_div_decl_kind) ? div : rem, opPrecision, varPrecision }, createdFreshState);
+    }
+    return result;
+}
+
 Approximated<Bvec> ExprToBDDTransformer::getDivOrRem(const expr &e, const vector<boundVar> &boundVars)
 {
     checkNumberOfArguments<2>(e);
     func_decl f = e.decl();
     auto decl_kind = f.decl_kind();
+    bool is_div_decl_kind = decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I;
     Bvec div = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
     Bvec rem = Bvec::bvec_false(bddManager, e.decl().range().bv_size());
     auto [arg0, arg0OpPrecision, arg0VarPrecision] = getBvecFromExpr(e.arg(0), boundVars);
@@ -1184,30 +1226,17 @@ Approximated<Bvec> ExprToBDDTransformer::getDivOrRem(const expr &e, const vector
 
     int result = 0;
     if (e.arg(1).is_numeral() && e.get_sort().bv_size() <= 32) {
-        result = arg0.bvec_divfixed(getNumeralValue(e.arg(1)), div, rem);
+        result = handleNumeralDivision(e, arg0, div, rem);
     } else if ((config.approximationMethod == OPERATIONS || config.approximationMethod == BOTH) &&
             operationPrecision != 0) {
-        auto state = caches.findStateInCaches(e, boundVars);
-        bool createdFreshState = state.IsFresh();
-        auto div_cp = div;
-        auto rem_cpy = rem;
-        result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
-        if (DEBUG) {
-            auto res = Bvec::bvec_div_nodeLimit_orig(arg0, arg1, div_cp, rem_cpy, precisionMultiplier * operationPrecision, state);
-            std::cout << "div" << std::endl;
-            BvecTester::testBvecEq(div, div_cp);
-            std::cout << "rem" << std::endl;
-            BvecTester::testBvecEq(rem, rem_cpy);
-        }
-        if (result == 0) {
-            caches.insertStateIntoCaches(e, state, boundVars, { (decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I) ? div : rem, opPrecision, varPrecision }, createdFreshState);
-        }
+        result = performDivWithNodeLimit(e, arg0, arg1, div, rem, boundVars, is_div_decl_kind, opPrecision, varPrecision);
+
     } else {
         result = arg0.bvec_div(arg0, arg1, div, rem);
     }
 
     if (result == 0) {
-        return caches.insertIntoCaches(e, { decl_kind == Z3_OP_BUDIV || decl_kind == Z3_OP_BUDIV_I ? div : rem, opPrecision, varPrecision }, boundVars);
+        return caches.insertIntoCaches(e, { is_div_decl_kind ? div : rem, opPrecision, varPrecision }, boundVars);
     } else {
         cout << "ERROR: division error" << endl;
         cout << "unknown";

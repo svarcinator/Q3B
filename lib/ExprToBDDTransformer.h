@@ -106,7 +106,13 @@ class ExprToBDDTransformer
     Approximated<Bvec> getConcatApproximated(const z3::expr &e, const std::vector<boundVar> &boundVars, const Approximated<Bvec>&);
 
     // helper funcs
-  
+    int handleNumeralDivision(const z3::expr &e, const Bvec &arg0, Bvec &div, Bvec &rem);
+    Bvec getRelevantBvec(int decl_kind, const Bvec &div, const Bvec &rem);
+    int performDivWithNodeLimit(const z3::expr &e, const Bvec &arg0, const Bvec &arg1, Bvec &div, Bvec &rem, const std::vector<boundVar> &, bool, Precision , Precision );
+
+
+    boundVar extractBoundVar(const z3::expr &e, const std::vector<boundVar> &boundVars);
+    Approximated<Bvec> handleVariableApproximation(const z3::expr &e, const boundVar &bVar, const std::vector<boundVar> &boundVars);
     bool shouldApproximate() const;
     z3::expr getLastItePart(const z3::expr &e, z3::expr (*op)(const z3::expr &e1, const z3::expr &e2),
                                           const z3::expr &arg0, const z3::expr &arg1, const z3::expr &zero, const z3::expr &one,
