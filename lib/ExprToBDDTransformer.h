@@ -106,7 +106,10 @@ class ExprToBDDTransformer
     Approximated<Bvec> getConcatApproximated(const z3::expr &e, const std::vector<boundVar> &boundVars, const Approximated<Bvec>&);
 
     // helper funcs
-
+    Approximated<Bvec> applyUnaryOperation(const expr &e, const vector<boundVar> &boundVars,
+                                           std::function<Bvec(const Bvec&, const std::vector<Interval>&, const Bvec&)> approxOp,
+                                           std::function<Bvec(const Bvec&)> normalOp,
+                                           std::function<BWChangeEffect(const Bvec&)> effectFunc);
     bool shouldApproximate() const;
     // Bvec performApproximateMultiplication(Bvec &a, Bvec &b, Computation_state &);
     // int countConstantBits(const Bvec &vec) const;
