@@ -1,7 +1,6 @@
 #include "Caches.h"
+
 #include "IntervalTester.h"
-
-
 
 #define DEBUG false
 
@@ -9,9 +8,8 @@ Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approxim
 {
     bvecExprCache.insert({ (Z3_ast) expr, { bvec, boundVars } });
 
-    if (bvec.value.isPrecise()) {   //isPresise iff does not contain ? value
+    if (bvec.value.isPrecise()) { //isPresise iff does not contain ? value
         sameBWPreciseBvecs.insert({ (Z3_ast) expr, { bvec, boundVars } });
-        
     }
     return bvec;
 }
@@ -43,12 +41,13 @@ void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state
     }
 }
 
-void Caches::insertInterval(const z3::expr& e, const std::vector<Interval>& interval) {
-    if(DEBUG){
+void Caches::insertInterval(const z3::expr &e, const std::vector<Interval> &interval)
+{
+    if (DEBUG) {
         IntervalTester::testIntervals(interval);
     }
-    
-    intervals.insert({(Z3_ast) e,interval });
+
+    intervals.insert({ (Z3_ast) e, interval });
 }
 
 void Caches::clearCaches()
@@ -97,67 +96,113 @@ bool Caches::correctBoundVars(const std::vector<boundVar> &boundVars, const std:
     return true;
 }
 
-std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars) const
+void Caches::incrementCache(int cacheType)
+{
+    switch (cacheType) {
+    case 0:
+        ++cacheHits.bddExprCacheHits;
+        break;
+    case 1:
+        ++cacheHits.preciseBddsHits;
+        break;
+    case 2:
+        ++cacheHits.sameBWPreciseBddsHits;
+        break;
+
+    case 3:
+        ++cacheHits.prevBWpreciseBvecsHits;
+        break;
+
+    case 4:
+        ++cacheHits.intervalsHits;
+        break;
+
+    case 5:
+        ++cacheHits.bvecExprCacheHits;
+        break;
+    case 6:
+        ++cacheHits.preciseBvecsHits;
+        break;
+
+    case 7:
+        ++cacheHits.sameBWPreciseBvecsHits;
+        break;
+    case 8:
+        ++cacheHits.sameBWImpreciseBvecStatesHits;
+        break;
+
+    default:
+        break;
+    }
+}
+std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars)
 {
     auto caches = { bvecExprCache, preciseBvecs, sameBWPreciseBvecs };
+    int counter = 5;
     for (const auto &cache : caches) {
         auto item = cache.find((Z3_ast) e);
         if (item != cache.end() && correctBoundVars(boundVars, (item->second).second)) {
+            incrementCache(counter);
             return (item->second).first;
         }
+        ++counter;
     }
     return {};
 }
 
-std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars, bool isPositive) const
+std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars, bool isPositive)
 {
     auto caches = { bddExprCache, preciseBdds, sameBWPreciseBdds };
+    int counter = 0;
     for (const auto &cache : caches) {
         auto item = cache.find({ (Z3_ast) e, isPositive });
         if (item != cache.end()) {
             if (correctBoundVars(boundVars, (item->second).second)) {
+                incrementCache(counter);
                 return (item->second).first;
             }
+            ++counter;
         }
     }
     return {};
 }
 
-Computation_state Caches::findStateInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars) const
+Computation_state Caches::findStateInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars)
 {
     auto item = sameBWImpreciseBvecStates.find((Z3_ast) e);
     if (item != sameBWImpreciseBvecStates.end() && correctBoundVars(boundVars, (item->second).second)) {
-        return sameBWImpreciseBvecStates.at((Z3_ast) e).first; 
+        ++cacheHits.sameBWImpreciseBvecStatesHits;
+        return sameBWImpreciseBvecStates.at((Z3_ast) e).first;
     }
-    return Computation_state();                
+    return Computation_state();
 }
 
-std::optional<Approximated<cudd::Bvec>> Caches::findPrevBWPreciseBvec(const z3::expr &e,const std::vector<boundVar> & boundVars )const
+std::optional<Approximated<cudd::Bvec>> Caches::findPrevBWPreciseBvec(const z3::expr &e, const std::vector<boundVar> &boundVars) 
 {
     auto item = prevBWpreciseBvecs.find((Z3_ast) e);
     if (item != prevBWpreciseBvecs.end() && correctBoundVars(boundVars, (item->second).second)) {
-        return prevBWpreciseBvecs.at((Z3_ast) e).first; 
+        ++cacheHits.prevBWpreciseBvecsHits;
+        return prevBWpreciseBvecs.at((Z3_ast) e).first;
     }
-    return {};   
-
+    return {};
 }
 
-Computation_state Caches::getstateFromBvec(const std::optional<Approximated<cudd::Bvec>>& bvec)
+Computation_state Caches::getstateFromBvec(const std::optional<Approximated<cudd::Bvec>> &bvec)
 {
     if (bvec.has_value()) {
         return Computation_state(bvec.value().value.m_bitvec);
     }
     return Computation_state();
-
 }
 
-std::vector<Interval> Caches::findInterval(const z3::expr& e) const
+std::vector<Interval> Caches::findInterval(const z3::expr &e)
 {
     auto item = intervals.find((Z3_ast) e);
-    if (item != intervals.end() ) {
-        return intervals.at((Z3_ast) e); 
+    if (item != intervals.end()) {
+        ++cacheHits.intervalsHits;
+        return intervals.at((Z3_ast) e);
     }
-    return {{INT_MAX, 0}};    // if expr not found return maximal interval -> whole bvec will be recomputed
+    return { { INT_MAX, 0 } }; // if expr not found return maximal interval -> whole bvec will be recomputed
 }
 
 void Caches::pruneBvecCache(const std::vector<boundVar> &newBoundVars)
@@ -182,7 +227,8 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
     }
 }
 
-void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context& context) {
+void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context &context)
+{
     if (type == ALL_OPS) {
         prevBWpreciseBvecs = sameBWPreciseBvecs;
     } else if (type == NO_OPS) {
@@ -190,7 +236,7 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
     } else {
         prevBWpreciseBvecs.clear();
         // only demanding operations stay in cache -- sofar +, -
-        std::set<Z3_decl_kind> declKinds = {Z3_OP_BADD, Z3_OP_BSUB};
+        std::set<Z3_decl_kind> declKinds = { Z3_OP_BADD, Z3_OP_BSUB };
         for (auto [key, val] : sameBWPreciseBvecs) {
             // tbd
             std::cout << "expr = " << Z3_get_ast_kind(context, key) << std::endl;
@@ -201,13 +247,11 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
                 // prevBWpreciseBvecs.insert({key, val});
             } else if (e.is_app()) {
                 z3::func_decl f = e.decl();
-	            auto decl_kind = f.decl_kind();
+                auto decl_kind = f.decl_kind();
                 if (declKinds.find(decl_kind) != declKinds.end()) {
-                    prevBWpreciseBvecs.insert({key, val});
+                    prevBWpreciseBvecs.insert({ key, val });
                 }
             }
         }
     }
-    
-    
 }

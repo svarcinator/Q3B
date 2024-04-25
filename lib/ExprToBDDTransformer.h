@@ -30,6 +30,13 @@ enum IncrementedApproxStyle {BIT_WIDTH, PRECISION};
 
 typedef std::pair<std::string, BoundType> boundVar;
 
+enum class Operation {
+    Add,
+    Sub,
+    Mul,
+    Div
+};
+
 using namespace cudd;
 
 class ExprToBDDTransformer
@@ -96,6 +103,7 @@ class ExprToBDDTransformer
     Approximated<Bvec> getBXor(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getAddition(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getSubstraction(const z3::expr &e, const std::vector<boundVar> &);
+    Approximated<cudd::Bvec> ComputeAbstraction(const z3::expr &e, const std::vector<boundVar> &boundVars, Operation op);
     Approximated<Bvec> getConcat(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getExtract(const z3::expr &e, const std::vector<boundVar> &);
     Approximated<Bvec> getMul(const z3::expr &e, const std::vector<boundVar> &);

@@ -4,6 +4,7 @@
 #include "BvecTester.h"
 #include "ExpensiveOp.h"
 #include "HexHelper.h"
+#include "Logger.h"
 #include "Solver.h"
 
 #include <algorithm>
@@ -153,6 +154,14 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     auto result = getBDDFromExpr(e, {}, true, true);
 
     operationApproximationHappened = !result.IsPrecise();
+    std::stringstream solverType;
+    solverType << ((approximation == 0) ? "UnderApprox" : "OverApprox")
+                    << " bw=" << variableBitWidth << " precision " << operationPrecision;
+    auto cacheHitsJson = caches.cacheHitsToJson();
+
+    Logger::Log(solverType.str(), cacheHitsJson.str(), 6);
+
+
 
     caches.clearCurrentBwAndPrecCaches();
 
@@ -989,14 +998,7 @@ Approximated<Bvec> ExprToBDDTransformer::getBXor(const expr &e, const vector<bou
 Approximated<Bvec> ExprToBDDTransformer::getAddition(const expr &e, const vector<boundVar> &boundVars)
 {
     if (ApproximateOps()) {
-        auto state = caches.findStateInCaches(e, boundVars);
-        bool createdFreshState = state.IsFresh();
-        auto res = bvec_assocOp(
-                e, [&](auto x, auto y) { return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-
-        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-
-        return res;
+        return ComputeAbstraction(e, boundVars, Operation::Add);
     } else if (ApproximateVars()) {
         auto prevBvec = caches.findPrevBWPreciseBvec(e, boundVars);
         auto prevBvecState = Caches::getstateFromBvec(prevBvec);
@@ -1020,13 +1022,7 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
 {
     checkNumberOfArguments<2>(e);
     if (ApproximateOps()) {
-        auto state = caches.findStateInCaches(e, boundVars);
-        bool createdFreshState = state.IsFresh();
-        auto res = bvec_assocOp(
-                e, [&](auto x, auto y) { return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state); }, boundVars);
-
-        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-        return res;
+        return ComputeAbstraction(e, boundVars, Operation::Sub);
     } else if (ApproximateVars()) {
         auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
         unsigned int nodeLimit = (config.approximationMethod == BOTH) ? precisionMultiplier * operationPrecision : INT_MAX;
@@ -1043,6 +1039,32 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
     }
     return bvec_binOp(
             e, [](auto x, auto y) { return x - y; }, boundVars);
+}
+
+Approximated<cudd::Bvec> ExprToBDDTransformer::ComputeAbstraction(const z3::expr &e, const std::vector<boundVar> &boundVars, Operation op)
+{
+   
+
+    auto state = caches.findStateInCaches(e, boundVars);
+    bool createdFreshState = state.IsFresh();
+    auto res = bvec_assocOp(
+            e,
+            [&](auto x, auto y) {
+                switch (op) {
+                case Operation::Add:
+                    return Bvec::bvec_add_nodeLimit(x, y, precisionMultiplier * operationPrecision, state);
+                case Operation::Sub:
+                    return Bvec::bvec_sub(x, y, precisionMultiplier * operationPrecision, state);
+                case Operation::Mul:
+                    return bvec_mul(x, y, state);
+                default:
+                    throw std::invalid_argument("Invalid operation for ComputeAbstraction");
+                }
+            },
+            boundVars);
+
+    caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
+    return res;
 }
 
 Approximated<Bvec> ExprToBDDTransformer::getCurrentBvec(const expr &e, const vector<boundVar> &boundVars, int newSize, bool &wasCurrentCached)
@@ -1153,12 +1175,7 @@ Approximated<Bvec> ExprToBDDTransformer::getMul(const expr &e, const vector<boun
     checkNumberOfArguments<2>(e); // in preprocessing adjusted so that mul has always 2 args
 
     if (ApproximateOps()) {
-        auto state = caches.findStateInCaches(e, boundVars);
-        bool createdFreshState = state.IsFresh();
-        auto res = bvec_assocOp(
-                e, [&](auto x, auto y) { return bvec_mul(x, y, state); }, boundVars);
-        caches.insertStateIntoCaches(e, state, boundVars, res, createdFreshState);
-        return res;
+        return ComputeAbstraction(e, boundVars, Operation::Mul);
     } else if (ApproximateVars()) {
         // auto prevBvecState = Caches::getstateFromBvec(caches.findPrevBWPreciseBvec(e, boundVars));
         // auto resInterval= BWChangeEffect::EffectOnAddorSub(caches.findInterval(e.arg(0)), caches.findInterval(e.arg(1)));
@@ -1192,10 +1209,11 @@ Bvec ExprToBDDTransformer::getRelevantBvec(int decl_kind, const Bvec &div, const
 // Perform division with node limits and handle debug checks
 int ExprToBDDTransformer::performDivWithNodeLimit(const expr &e, const Bvec &arg0, const Bvec &arg1, Bvec &div, Bvec &rem, const vector<boundVar> &boundVars, bool is_div_decl_kind, Precision opPrecision, Precision varPrecision)
 {
-    auto state = caches.findStateInCaches(e, boundVars);
-    bool createdFreshState = state.IsFresh();
+    
     auto div_cpy = div;
     auto rem_cpy = rem;
+    auto state = caches.findStateInCaches(e, boundVars);
+    bool createdFreshState = state.IsFresh();
     auto result = Bvec::bvec_div_nodeLimit(arg0, arg1, div, rem, precisionMultiplier * operationPrecision, state);
     if (DEBUG) {
         auto res = Bvec::bvec_div_nodeLimit_orig(arg0, arg1, div_cpy, rem_cpy, precisionMultiplier * operationPrecision, state);
