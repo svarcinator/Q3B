@@ -1,0 +1,23 @@
+../Q3B/build/q3b ../BV/2017-Preiner-psyco/149.smt2
+
+
+--------------------------------------------------------------------------------
+
+
+[Info, 0.430368s] Approx:over, bw=1, precision 1, : {bvecExprCacheHits :16
+}
+[Info, 0.522585s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :63
+}
+[Info, 0.548398s] Approx:over, bw=-1, precision 1, : {bvecExprCacheHits :16
+}
+[Info, 0.585279s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :13
+}
+interrupted
+interrupted
+[Info, 0.588129s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :49
+}
+interrupted
+interrupted
+[Info, 0.60141s] Approx:over, bw=0, precision 492786110, : {bvecExprCacheHits :29
+}
+sat

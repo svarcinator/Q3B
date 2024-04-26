@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 2.3//EN" "https://www.sosy-lab.org/benchexec/benchmark-2.2.3dtd">
+
+<benchmark tool="q3b"
+           timelimit="3 s"
+           memlimit="8GB"
+           cpuCores="3" 
+           name="log_test" >
+           <require cpuModel="Intel Core i7"/>
+    
+     <rundefinition name="vanilla">
+    
+        
+    
+        <tasks name="2017-Preiner-psyco">
+            <include>../../BV/2017-Preiner-psyco/*.smt2</include>
+        </tasks>
+    
+    
+    </rundefinition>  
+    
+</benchmark>
+    

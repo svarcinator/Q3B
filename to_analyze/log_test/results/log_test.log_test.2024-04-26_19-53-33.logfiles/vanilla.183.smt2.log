@@ -1,0 +1,39 @@
+../Q3B/build/q3b ../BV/2017-Preiner-psyco/183.smt2
+
+
+--------------------------------------------------------------------------------
+
+
+[Info, 0.151052s] Approx:over, bw=1, precision 1, : {bvecExprCacheHits :3
+}
+[Info, 0.189408s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :6
+}
+[Info, 0.240387s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :6
+}
+[Info, 0.248045s] Approx:over, bw=-1, precision 1, : {bvecExprCacheHits :3
+}
+[Info, 0.335956s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :6
+}
+[Info, 0.365895s] Approx:over, bw=2, precision 1, : {bvecExprCacheHits :5
+}
+[Info, 0.408893s] Approx:under, bw=1, precision 4, : {bvecExprCacheHits :6
+}
+[Info, 0.462897s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :6
+}
+[Info, 0.554123s] Approx:under, bw=-1, precision 4, : {bvecExprCacheHits :6
+}
+[Info, 0.597141s] Approx:under, bw=2, precision 4, : {bvecExprCacheHits :6
+}
+[Info, 0.625488s] Approx:under, bw=4, precision 4, : {bvecExprCacheHits :6
+}
+[Info, 0.642793s] Approx:over, bw=128, precision 2, : {bvecExprCacheHits :5
+}
+interrupted
+interrupted
+[Info, 0.646609s] Approx:under, bw=6, precision 4, : {bvecExprCacheHits :2
+}
+interrupted
+interrupted
+[Info, 0.650728s] Approx:over, bw=0, precision 368333246, : {bvecExprCacheHits :0
+}
+unsat

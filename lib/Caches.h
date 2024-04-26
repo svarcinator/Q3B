@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <z3++.h>
-#include <nlohmann/json.hpp>
+//#include <nlohmann/json.hpp>
 
 #include "Approximated.h"
 #include "cudd.h"
@@ -109,21 +109,31 @@ class Caches
         return ss.str();
     }
 
-    std::stringstream cacheHitsToJson()
-    {
-        nlohmann::json j;
-        j["bvecExprCacheHits"] = cacheHits.bvecExprCacheHits;
-        j["preciseBvecsHits"] = cacheHits.preciseBvecsHits;
-        j["sameBWPreciseBvecsHits"] = cacheHits.sameBWPreciseBvecsHits;
-        j["prevBWpreciseBvecsHits"] = cacheHits.prevBWpreciseBvecsHits;
-        j["intervalsHits"] = cacheHits.intervalsHits;
-        j["bddExprCacheHits"] = cacheHits.bddExprCacheHits;
-        j["sameBWPreciseBddsHits"] = cacheHits.sameBWPreciseBddsHits;
-        j["sameBWImpreciseBvecStatesHits"] = cacheHits.sameBWImpreciseBvecStatesHits;
-        // Add other cache hit counters as needed
+    // std::stringstream cacheHitsToJson()
+    // {
+    //     nlohmann::json j;
+    //     j["bvecExprCacheHits"] = cacheHits.bvecExprCacheHits;
+    //     j["preciseBvecsHits"] = cacheHits.preciseBvecsHits;
+    //     j["sameBWPreciseBvecsHits"] = cacheHits.sameBWPreciseBvecsHits;
+    //     j["prevBWpreciseBvecsHits"] = cacheHits.prevBWpreciseBvecsHits;
+    //     j["intervalsHits"] = cacheHits.intervalsHits;
+    //     j["bddExprCacheHits"] = cacheHits.bddExprCacheHits;
+    //     j["sameBWPreciseBddsHits"] = cacheHits.sameBWPreciseBddsHits;
+    //     j["sameBWImpreciseBvecStatesHits"] = cacheHits.sameBWImpreciseBvecStatesHits;
+    //     // Add other cache hit counters as needed
 
+    //     std::stringstream ss;
+    //     ss << j;
+    //     return ss;
+    // }
+
+    std::stringstream cacheHitsToJson() {
         std::stringstream ss;
-        ss << j;
+        ss << "{";
+
+        ss << "bvecExprCacheHits :" <<  cacheHits.bvecExprCacheHits << std::endl;
+
+        ss << "}";
         return ss;
     }
 };

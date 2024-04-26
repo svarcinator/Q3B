@@ -1,0 +1,48 @@
+../Q3B/build/q3b ../BV/2017-Preiner-psyco/143.smt2
+
+
+--------------------------------------------------------------------------------
+
+
+[Info, 0.193299s] Approx:over, bw=1, precision 1, : {bvecExprCacheHits :24
+}
+[Info, 0.219189s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.236393s] Approx:over, bw=-1, precision 1, : {bvecExprCacheHits :23
+}
+[Info, 0.251689s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.271285s] Approx:over, bw=2, precision 1, : {bvecExprCacheHits :23
+}
+[Info, 0.275569s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :24
+}
+[Info, 0.281873s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.298689s] Approx:over, bw=4, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.309809s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.331409s] Approx:over, bw=6, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.342275s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.361095s] Approx:over, bw=8, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.372192s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.405578s] Approx:over, bw=10, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.417132s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.440924s] Approx:over, bw=12, precision 1, : {bvecExprCacheHits :18
+}
+[Info, 0.455413s] Approx:under, bw=1, precision 1, : {bvecExprCacheHits :10
+}
+[Info, 0.455608s] Approx:over, bw=0, precision 258752958, : {bvecExprCacheHits :24
+}
+interrupted
+[Info, 0.45933s] Approx:over, bw=14, precision 1, : {bvecExprCacheHits :0
+}
+[Info, 0.485454s] Approx:under, bw=1, precision 4, : {bvecExprCacheHits :11
+}
+sat
