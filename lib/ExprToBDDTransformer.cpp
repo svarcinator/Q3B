@@ -155,11 +155,12 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
 
     operationApproximationHappened = !result.IsPrecise();
     std::stringstream solverType;
-    solverType << ((approximation == 0) ? "UnderApprox" : "OverApprox")
-                    << " bw=" << variableBitWidth << " precision " << operationPrecision;
+    solverType << "Approx:"<< ((approximation == 0) ? "under," : "over,")
+                    << " bw=" << variableBitWidth << ", precision " << operationPrecision << ", ";
     auto cacheHitsJson = caches.cacheHitsToJson();
 
-    Logger::Log(solverType.str(), cacheHitsJson.str(), 6);
+    Logger::Log(solverType.str(), cacheHitsJson.str(), -1);
+    caches.resetCacheHits();
 
 
 

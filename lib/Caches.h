@@ -1,17 +1,18 @@
 #ifndef Caches_h
 #define Caches_h
 
+#include <vector>
+#include <map>
+#include <z3++.h>
+#include <nlohmann/json.hpp>
+
 #include "Approximated.h"
+#include "cudd.h"
+#include <cuddObj.hh>
+#include "cudd/bvec_cudd.h"
 #include "BDDInterval.h"
 #include "Config.h"
-#include "cudd.h"
-#include "cudd/bvec_cudd.h"
 
-#include <cuddObj.hh>
-#include <map>
-#include <nlohmann/json.hpp>
-#include <vector>
-#include <z3++.h>
 
 enum BoundType
 {
@@ -89,6 +90,8 @@ class Caches
 
     void pruneBvecCache(const std::vector<boundVar> &);
     void pruneBddCache(const std::vector<boundVar> &);
+
+    void resetCacheHits();
 
     void setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context &context);
 

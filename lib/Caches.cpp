@@ -227,6 +227,11 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
     }
 }
 
+void Caches::resetCacheHits()
+{
+    cacheHits = CacheHits();
+}
+
 void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::context &context)
 {
     if (type == ALL_OPS) {
