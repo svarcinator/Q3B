@@ -1,9 +1,0 @@
-../Q3B/build/q3b ../BV/2017-Preiner-psyco/140.smt2
-
-
---------------------------------------------------------------------------------
-
-
-[Info, 0.0734291s] Approx:over, bw=0, precision 280601022, : {bvecExprCacheHits :3
-}
-unsat
