@@ -122,13 +122,13 @@ class Caches
         std::stringstream ss;
         ss << "{";
 
-        ss << "bvecExprCacheHits :" <<  cacheHits.bvecExprCacheHits << std::endl;
-        ss << "sameBWPreciseBvecsHits :" << cacheHits.sameBWPreciseBvecsHits << std::endl;
-        ss << "prevBWpreciseBvecsHits :" << cacheHits.prevBWpreciseBvecsHits << std::endl;
-        ss << "intervalsHits :" << cacheHits.intervalsHits << std::endl;
-        ss << "bddExprCacheHits :" << cacheHits.bddExprCacheHits << std::endl;
-        ss << "sameBWPreciseBddsHits :" << cacheHits.sameBWPreciseBddsHits << std::endl;
-        ss << "sameBWImpreciseBvecStatesHits :" << cacheHits.sameBWImpreciseBvecStatesHits << std::endl;
+        ss << "bvecExpr :" <<  cacheHits.bvecExprCacheHits << std::endl;
+        ss << "sameBWPreciseBvecs:" << cacheHits.sameBWPreciseBvecsHits << std::endl;
+        ss << "prevBWpreciseBvecs :" << cacheHits.prevBWpreciseBvecsHits << std::endl;
+        ss << "intervals :" << cacheHits.intervalsHits << std::endl;
+        ss << "bddExpr :" << cacheHits.bddExprCacheHits << std::endl;
+        ss << "sameBWPreciseBdds :" << cacheHits.sameBWPreciseBddsHits << std::endl;
+        ss << "sameBWImpreciseBvecStates :" << cacheHits.sameBWImpreciseBvecStatesHits << std::endl;
 
         ss << "}";
         return ss;
@@ -138,11 +138,11 @@ class Caches
         std::stringstream ss;
         ss << "{";
 
-        ss << "bvecExprCache :" <<  bvecExprCache.size() << std::endl;
+        ss << "bvecExpr :" <<  bvecExprCache.size() << std::endl;
         ss << "sameBWPreciseBvecs :" << sameBWPreciseBvecs.size() << std::endl;
         ss << "prevBWpreciseBvecs :" << prevBWpreciseBvecs.size() << std::endl;
         ss << "intervals :" << intervals.size() << std::endl;
-        ss << "bddExprCache :" << bddExprCache.size() << std::endl;
+        ss << "bddExpr :" << bddExprCache.size() << std::endl;
         ss << "sameBWPreciseBdds :" << sameBWPreciseBdds.size() << std::endl;
         ss << "sameBWImpreciseBvecStates :" << sameBWImpreciseBvecStates.size() << std::endl;
 
