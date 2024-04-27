@@ -133,5 +133,21 @@ class Caches
         ss << "}";
         return ss;
     }
+
+    std::stringstream cacheSizesToJson() {
+        std::stringstream ss;
+        ss << "{";
+
+        ss << "bvecExprCache :" <<  bvecExprCache.size() << std::endl;
+        ss << "sameBWPreciseBvecs :" << sameBWPreciseBvecs.size() << std::endl;
+        ss << "prevBWpreciseBvecs :" << prevBWpreciseBvecs.size() << std::endl;
+        ss << "intervals :" << intervals.size() << std::endl;
+        ss << "bddExprCache :" << bddExprCache.size() << std::endl;
+        ss << "sameBWPreciseBdds :" << sameBWPreciseBdds.size() << std::endl;
+        ss << "sameBWImpreciseBvecStates :" << sameBWImpreciseBvecStates.size() << std::endl;
+
+        ss << "}";
+        return ss;
+    }
 };
 #endif
