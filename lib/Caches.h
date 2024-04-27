@@ -40,9 +40,7 @@ class Caches
     int variableBitWidth;
     struct CacheHits
     {
-        int preciseBddsHits = 0;
         int sameBWPreciseBddsHits = 0;
-        int preciseBvecsHits = 0;
         int prevBWpreciseBvecsHits = 0;
         int intervalsHits = 0;
         int bddExprCacheHits = 0;
@@ -53,10 +51,6 @@ class Caches
 
     CacheHits cacheHits;
     void incrementCache(int cacheType);
-
-    std::map<std::pair<const Z3_ast, bool>, std::pair<BDDInterval, std::vector<boundVar>>> preciseBdds;
-    std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> preciseBvecs;
-    // Sofar not used anywhere
 
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> prevBWpreciseBvecs;
     std::map<const Z3_ast, std::vector<Interval>> intervals;
@@ -98,9 +92,6 @@ class Caches
     std::string to_string()
     {
         std::stringstream ss;
-
-        ss << "Precise bdds size = " << preciseBdds.size() << std::endl;
-        ss << "Precise bvecs size = " << preciseBvecs.size() << std::endl;
         ss << "prevBWpreciseBvecs bvecs size = " << prevBWpreciseBvecs.size() << std::endl;
         ss << "sameBWPreciseBdds bvecs size = " << sameBWPreciseBdds.size() << std::endl;
         ss << "sameBWPreciseBvecs bvecs size = " << sameBWPreciseBvecs.size() << std::endl;
@@ -132,6 +123,12 @@ class Caches
         ss << "{";
 
         ss << "bvecExprCacheHits :" <<  cacheHits.bvecExprCacheHits << std::endl;
+        ss << "sameBWPreciseBvecsHits :" << cacheHits.sameBWPreciseBvecsHits << std::endl;
+        ss << "prevBWpreciseBvecsHits :" << cacheHits.prevBWpreciseBvecsHits << std::endl;
+        ss << "intervalsHits :" << cacheHits.intervalsHits << std::endl;
+        ss << "bddExprCacheHits :" << cacheHits.bddExprCacheHits << std::endl;
+        ss << "sameBWPreciseBddsHits :" << cacheHits.sameBWPreciseBddsHits << std::endl;
+        ss << "sameBWImpreciseBvecStatesHits :" << cacheHits.sameBWImpreciseBvecStatesHits << std::endl;
 
         ss << "}";
         return ss;

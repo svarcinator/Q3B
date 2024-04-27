@@ -102,32 +102,27 @@ void Caches::incrementCache(int cacheType)
     case 0:
         ++cacheHits.bddExprCacheHits;
         break;
+
     case 1:
-        ++cacheHits.preciseBddsHits;
-        break;
-    case 2:
         ++cacheHits.sameBWPreciseBddsHits;
         break;
 
-    case 3:
+    case 2:
         ++cacheHits.prevBWpreciseBvecsHits;
         break;
 
-    case 4:
+    case 3:
         ++cacheHits.intervalsHits;
         break;
 
-    case 5:
+    case 4:
         ++cacheHits.bvecExprCacheHits;
         break;
-    case 6:
-        ++cacheHits.preciseBvecsHits;
-        break;
 
-    case 7:
+    case 5:
         ++cacheHits.sameBWPreciseBvecsHits;
         break;
-    case 8:
+    case 6:
         ++cacheHits.sameBWImpreciseBvecStatesHits;
         break;
 
@@ -137,8 +132,8 @@ void Caches::incrementCache(int cacheType)
 }
 std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars)
 {
-    auto caches = { bvecExprCache, preciseBvecs, sameBWPreciseBvecs };
-    int counter = 5;
+    auto caches = { bvecExprCache, sameBWPreciseBvecs };
+    int counter = 4;
     for (const auto &cache : caches) {
         auto item = cache.find((Z3_ast) e);
         if (item != cache.end() && correctBoundVars(boundVars, (item->second).second)) {
@@ -152,7 +147,7 @@ std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr
 
 std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars, bool isPositive)
 {
-    auto caches = { bddExprCache, preciseBdds, sameBWPreciseBdds };
+    auto caches = { bddExprCache,  sameBWPreciseBdds };
     int counter = 0;
     for (const auto &cache : caches) {
         auto item = cache.find({ (Z3_ast) e, isPositive });
