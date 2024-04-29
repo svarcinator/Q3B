@@ -99,12 +99,14 @@ bool Caches::correctBoundVars(const std::vector<boundVar> &boundVars, const std:
 void Caches::incrementCache(int cacheType)
 {
     switch (cacheType) {
+    
+
     case 0:
-        ++cacheHits.bddExprCacheHits;
+        ++cacheHits.sameBWPreciseBddsHits;
         break;
 
     case 1:
-        ++cacheHits.sameBWPreciseBddsHits;
+        ++cacheHits.bddExprCacheHits;
         break;
 
     case 2:
@@ -114,25 +116,26 @@ void Caches::incrementCache(int cacheType)
     case 3:
         ++cacheHits.intervalsHits;
         break;
-
+    
     case 4:
-        ++cacheHits.bvecExprCacheHits;
+        ++cacheHits.sameBWPreciseBvecsHits;
         break;
 
     case 5:
-        ++cacheHits.sameBWPreciseBvecsHits;
+        ++cacheHits.bvecExprCacheHits;
         break;
+
     case 6:
         ++cacheHits.sameBWImpreciseBvecStatesHits;
         break;
 
     default:
-        break;
+        assert(false);
     }
 }
 std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars)
 {
-    auto caches = { bvecExprCache, sameBWPreciseBvecs };
+    auto caches = { sameBWPreciseBvecs, bvecExprCache  };
     int counter = 4;
     for (const auto &cache : caches) {
         auto item = cache.find((Z3_ast) e);
@@ -147,7 +150,7 @@ std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr
 
 std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars, bool isPositive)
 {
-    auto caches = { bddExprCache,  sameBWPreciseBdds };
+    auto caches = { sameBWPreciseBdds, bddExprCache  };
     int counter = 0;
     for (const auto &cache : caches) {
         auto item = cache.find({ (Z3_ast) e, isPositive });
@@ -156,8 +159,8 @@ std::optional<BDDInterval> Caches::foundExprInCaches(const z3::expr &e, const st
                 incrementCache(counter);
                 return (item->second).first;
             }
-            ++counter;
         }
+        ++counter;
     }
     return {};
 }
