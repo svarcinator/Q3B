@@ -4,7 +4,6 @@
 #include <vector>
 #include <map>
 #include <z3++.h>
-//#include <nlohmann/json.hpp>
 
 #include "Approximated.h"
 #include "cudd.h"
@@ -100,54 +99,6 @@ class Caches
         return ss.str();
     }
 
-    // std::stringstream cacheHitsToJson()
-    // {
-    //     nlohmann::json j;
-    //     j["bvecExprCacheHits"] = cacheHits.bvecExprCacheHits;
-    //     j["preciseBvecsHits"] = cacheHits.preciseBvecsHits;
-    //     j["sameBWPreciseBvecsHits"] = cacheHits.sameBWPreciseBvecsHits;
-    //     j["prevBWpreciseBvecsHits"] = cacheHits.prevBWpreciseBvecsHits;
-    //     j["intervalsHits"] = cacheHits.intervalsHits;
-    //     j["bddExprCacheHits"] = cacheHits.bddExprCacheHits;
-    //     j["sameBWPreciseBddsHits"] = cacheHits.sameBWPreciseBddsHits;
-    //     j["sameBWImpreciseBvecStatesHits"] = cacheHits.sameBWImpreciseBvecStatesHits;
-    //     // Add other cache hit counters as needed
-
-    //     std::stringstream ss;
-    //     ss << j;
-    //     return ss;
-    // }
-
-    std::stringstream cacheHitsToJson() {
-        std::stringstream ss;
-        ss << "{";
-
-        ss << "bvecExpr :" <<  cacheHits.bvecExprCacheHits << std::endl;
-        ss << "sameBWPreciseBvecs:" << cacheHits.sameBWPreciseBvecsHits << std::endl;
-        ss << "prevBWpreciseBvecs :" << cacheHits.prevBWpreciseBvecsHits << std::endl;
-        ss << "intervals :" << cacheHits.intervalsHits << std::endl;
-        ss << "bddExpr :" << cacheHits.bddExprCacheHits << std::endl;
-        ss << "sameBWPreciseBdds :" << cacheHits.sameBWPreciseBddsHits << std::endl;
-        ss << "sameBWImpreciseBvecStates :" << cacheHits.sameBWImpreciseBvecStatesHits << std::endl;
-
-        ss << "}";
-        return ss;
-    }
-
-    std::stringstream cacheSizesToJson() {
-        std::stringstream ss;
-        ss << "{";
-
-        ss << "bvecExpr :" <<  bvecExprCache.size() << std::endl;
-        ss << "sameBWPreciseBvecs :" << sameBWPreciseBvecs.size() << std::endl;
-        ss << "prevBWpreciseBvecs :" << prevBWpreciseBvecs.size() << std::endl;
-        ss << "intervals :" << intervals.size() << std::endl;
-        ss << "bddExpr :" << bddExprCache.size() << std::endl;
-        ss << "sameBWPreciseBdds :" << sameBWPreciseBdds.size() << std::endl;
-        ss << "sameBWImpreciseBvecStates :" << sameBWImpreciseBvecStates.size() << std::endl;
-
-        ss << "}";
-        return ss;
-    }
+    
 };
 #endif

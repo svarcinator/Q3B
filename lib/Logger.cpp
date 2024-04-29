@@ -20,11 +20,12 @@ std::string logTypeToStr(const LogType &type)
 
 void Logger::Log(const std::string &module, const std::string &message, const int verbosity, const LogType &type)
 {
-    if (verbosity == -1) {
+    //std::cout << "m verbosity level: " << m_verbosityLevel << ", verbosity: " << verbosity <<  std::endl;
+    if (m_verbosityLevel == -1 && m_verbosityLevel == verbosity) {
         std::chrono::duration<double> time = std::chrono::high_resolution_clock::now() - startTime;
         std::unique_lock<std::mutex> lk(m);
         std::cout << "[" << logTypeToStr(type) << ", " << time.count() << "s] " << module << ": " << message << std::endl;
-    } else if (verbosity <= m_verbosityLevel) {
+    } else if (verbosity <= m_verbosityLevel && verbosity != -1) {
         std::chrono::duration<double> time = std::chrono::high_resolution_clock::now() - startTime;
         std::unique_lock<std::mutex> lk(m);
         std::cout << "[" << logTypeToStr(type) << ", " << time.count() << "s] " << module << ": " << message << std::endl;
