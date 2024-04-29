@@ -6,6 +6,7 @@
 #include "HexHelper.h"
 #include "Logger.h"
 #include "Solver.h"
+#include "CacheFormater.h"
 
 #include <algorithm>
 #include <cmath>
@@ -159,7 +160,8 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
                     << " bw=" << variableBitWidth << ", precision " << operationPrecision << ", ";
     
     std::stringstream logMessage;
-    logMessage << "Cache hits : " << caches.cacheHitsToJson().str() << ", cache sizes : " << caches.cacheSizesToJson().str();
+    //logMessage << "Cache hits : " << caches.cacheHitsToJson().str() << ", cache sizes : " << caches.cacheSizesToJson().str();
+    logMessage << "Cache hits : " << CacheFormatter::cacheHitsToJson(caches.cacheHits).str() << ", cache sizes : " << CacheFormatter::cacheSizesToJson(caches).str();
 
     Logger::Log(solverType.str(), logMessage.str(), -1);
     caches.resetCacheHits();
