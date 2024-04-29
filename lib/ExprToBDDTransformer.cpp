@@ -137,8 +137,8 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
     caches.clearCurrentBwAndPrecCaches();
 
     cacheHits = 0;
-    if (lastBW < 2 /* || lastBW == 128*/) {
-        caches.sameBWPreciseBvecs.clear(); // deal with -1 later (does it change something?)
+    if (lastBW < 2 ) {
+        caches.sameBWPreciseBvecs.clear(); 
     }
     if (lastBW != variableBitWidth) { // bitWidth changed
         incrementedApproxStyle = BIT_WIDTH;
@@ -160,7 +160,6 @@ BDDInterval ExprToBDDTransformer::loadBDDsFromExpr(expr e)
                     << " bw=" << variableBitWidth << ", precision " << operationPrecision << ", ";
     
     std::stringstream logMessage;
-    //logMessage << "Cache hits : " << caches.cacheHitsToJson().str() << ", cache sizes : " << caches.cacheSizesToJson().str();
     logMessage << "Cache hits : " << CacheFormatter::cacheHitsToJson(caches.cacheHits).str() << ", cache sizes : " << CacheFormatter::cacheSizesToJson(caches).str();
 
     Logger::Log(solverType.str(), logMessage.str(), -1);

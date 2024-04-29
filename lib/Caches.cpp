@@ -1,8 +1,10 @@
 #include "Caches.h"
-
+#include <mutex>
 #include "IntervalTester.h"
 
 #define DEBUG false
+
+static std::mutex m;
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
@@ -26,18 +28,18 @@ BDDInterval Caches::insertIntoCaches(const z3::expr &expr, const BDDInterval &bd
 
 void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state &state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool newState)
 {
-    //std::cout << "insertStateIntoCaches " << expr.to_string() << " state: " << state.to_string() << "  already in map? " << expr_already_in_map << std::endl;;
-    if (!bvec.value.isPrecise() && !state.bitvec.empty() && bvec.value.bddNodes() != 0) {
-        if (!newState) {
-            sameBWImpreciseBvecStates[expr] = { state, boundVars };
-            return;
+    if (!state.bitvec.empty() && bvec.value.bddNodes() != 0) {
+        if (!bvec.value.isPrecise()  ) {
+            if (!newState) {
+                sameBWImpreciseBvecStates[expr] = { state, boundVars };
+                return;
+            }
+            sameBWImpreciseBvecStates.insert({(Z3_ast) expr, { state, boundVars } });
         }
-        sameBWImpreciseBvecStates.insert({ (Z3_ast) expr, { state, boundVars } });
-        //std::cout << "Expr " << expr.to_string() << " inserted" << std::endl;
-    }
-    // if precise and in sameBWImpreciseBvecStates -> remove
-    if (!newState && bvec.value.isPrecise()) {
-        sameBWImpreciseBvecStates.erase(expr);
+        
+        if (!newState && bvec.value.isPrecise()) {
+            sameBWImpreciseBvecStates.erase(expr);
+        }
     }
 }
 
@@ -54,22 +56,20 @@ void Caches::clearCaches()
 {
     bddExprCache.clear();
     bvecExprCache.clear();
-    //preciseBdds.clear(); // never to be cleared since they are precise
-    //preciseBvecs.clear();
     sameBWPreciseBdds.clear();
     sameBWPreciseBvecs.clear();
     sameBWImpreciseBvecStates.clear();
     prevBWpreciseBvecs.clear();
     intervals.clear();
 }
-// clears caches that store objest for current bitwidth and precision
+// clears caches that store objects for current bitwidth and precision
 void Caches::clearCurrentBwAndPrecCaches()
 {
     bddExprCache.clear();
     bvecExprCache.clear();
 }
 
-// clears caches that store objest for current bitwidth
+// clears caches that store objects for current bitwidth
 // if only precision changes, do not clear
 void Caches::clearCurrentBwCaches()
 {
@@ -110,24 +110,14 @@ void Caches::incrementCache(int cacheType)
         break;
 
     case 2:
-        ++cacheHits.prevBWpreciseBvecsHits;
-        break;
-
-    case 3:
-        ++cacheHits.intervalsHits;
-        break;
-    
-    case 4:
         ++cacheHits.sameBWPreciseBvecsHits;
         break;
 
-    case 5:
+    case 3:
         ++cacheHits.bvecExprCacheHits;
         break;
 
-    case 6:
-        ++cacheHits.sameBWImpreciseBvecStatesHits;
-        break;
+    
 
     default:
         assert(false);
@@ -136,7 +126,7 @@ void Caches::incrementCache(int cacheType)
 std::optional<Approximated<cudd::Bvec>> Caches::foundExprInCaches(const z3::expr &e, const std::vector<boundVar> &boundVars)
 {
     auto caches = { sameBWPreciseBvecs, bvecExprCache  };
-    int counter = 4;
+    int counter = 2;
     for (const auto &cache : caches) {
         auto item = cache.find((Z3_ast) e);
         if (item != cache.end() && correctBoundVars(boundVars, (item->second).second)) {
@@ -227,6 +217,7 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
 
 void Caches::resetCacheHits()
 {
+    std::unique_lock<std::mutex> lk(m);
     cacheHits = CacheHits();
 }
 
