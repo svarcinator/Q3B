@@ -27,7 +27,7 @@ BDDInterval Caches::insertIntoCaches(const z3::expr &expr, const BDDInterval &bd
 
 void Caches::insertStateIntoCaches(const z3::expr &expr, const Computation_state &state, const std::vector<boundVar> &boundVars, const Approximated<Bvec> &bvec, const bool newState)
 {
-    if (!state.bitvec.empty() && bvec.value.bddNodes() != 0) {
+    if (!state.bitvec.empty() && bvec.value.bddNodes() != 0 && config.useComputationStateCache) {
         if (!bvec.value.isPrecise()  ) {
             if (!newState) {
                 sameBWImpreciseBvecStates[expr] = { state, boundVars };
@@ -231,7 +231,7 @@ void Caches::setCurrentBWasPrevBW(const IntervalRecomputationType type, z3::cont
         std::set<Z3_decl_kind> declKinds = { Z3_OP_BADD, Z3_OP_BSUB };
         for (auto [key, val] : sameBWPreciseBvecs) {
             // tbd
-            std::cout << "expr = " << Z3_get_ast_kind(context, key) << std::endl;
+            //std::cout << "expr = " << Z3_get_ast_kind(context, key) << std::endl;
             if (Z3_get_ast_kind(context, key) == 1000)
                 continue;
             auto e = z3::to_expr(context, key);

@@ -40,7 +40,8 @@ void print_usage()
     std::cout << "  --bdd:reorder               BDD reorder type (none|win2|win2ite|win3|win3ite|sift|siftite) [sift]" << std::endl;
     std::cout << "  --simpl:flip-universal      negate universal formulas [0]" << std::endl;
     std::cout << "  --lazy-evaluation           evaluate expressions in lazy way [0]" << std::endl;
-    std::cout << "  --interval-recomputation    use results computed for smaller BW (none|demanding|all)[all]" << std::endl;
+    std::cout << "  --cache:operations    use results computed for smaller BW for specified poerations (none|demanding|all)[all]" << std::endl;
+    std::cout << "  --cache:computation-state    use results computed for smaller BW for specified poerations [1]" << std::endl;
     std::cout << "  --verbosity                 set level of debugging outputs [0]" << std::endl;
 }
 
@@ -57,7 +58,8 @@ int main(int argc, char *argv[])
         { "bdd:reorder", required_argument, 0, 'r' },
         { "simpl:flip-universal", required_argument, 0, 'f' },
         { "verbosity", required_argument, 0, 'v' },
-        { "interval-recomputation", required_argument, 0, 'e' },
+        { "cache:operations", required_argument, 0, 'e' },
+        { "cache:computation-state", required_argument, 0, 's' },
         { "lazy-evaluation", required_argument, 0, 'l' },
         { "version", no_argument, 0, 'V' },
         { "help", no_argument, 0, 'h' },
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
 
     int opt = 0;
     int long_index = 0;
-    while ((opt = getopt_long(argc, argv, "a:m:b:p:g:r:i:e:l:c:C:f:v:hV", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "a:m:b:p:g:r:i:e:s:l:c:C:f:v:hV", long_options, &long_index)) != -1) {
         switch (opt) {
         case 'a': {
             string optionString(optarg);
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
             break;
         }
         case 'm': {
-			string optionString(optarg);
+            string optionString(optarg);
 
             if (optionString == "variables")
                 config.approximationMethod = VARIABLES;
@@ -148,7 +150,6 @@ int main(int argc, char *argv[])
                 exit(1);
             }
             break;
-            
         }
         case 'v': {
             Logger::SetVerbosity(atoi(optarg));
@@ -178,6 +179,11 @@ int main(int argc, char *argv[])
             }
             break;
         }
+        case 's': {
+            config.useComputationStateCache = atoi(optarg);
+            break;
+        }
+        
         case 'l': {
             config.lazyEvaluation = atoi(optarg);
             break;

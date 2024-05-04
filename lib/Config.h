@@ -27,6 +27,8 @@ struct Config
     bool produceModels = false;
     bool validatingSolver = false;
 
+    bool useComputationStateCache = true;
+
     bool lazyEvaluation = false;
     IntervalRecomputationType interval_recomputation = ALL_OPS;
 };

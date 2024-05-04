@@ -30,6 +30,7 @@ ExprToBDDTransformer::ExprToBDDTransformer(z3::context &ctx, z3::expr e, Config 
     loadVars();
     //setApproximationType(ZERO_EXTEND);
     setApproximationType(SIGN_EXTEND); // why? -- under and over appr set appr type themselves, no appr does not need it
+    caches.setupConfig(config);
 }
 
 void ExprToBDDTransformer::getVars(const z3::expr &e)
@@ -920,7 +921,6 @@ Approximated<Bvec> ExprToBDDTransformer::getBNot(const expr &e, const vector<bou
                                                                                 x, changeInterval, [&](const MaybeBDD &a) { return !a; }, prevBvec.value().value); },
                     [&](auto x) { return BWChangeEffect::EffectOnKid(x); },
                     boundVars); // same effect (interval) as on child
-            //checkEqual(res,[&]() {return bvec_unOp(e, std::bind(Bvec::bvec_map1, _1, [&](const MaybeBDD &a) { return !a; }), boundVars);}  ); //tests res if DEBUG == true
             return res;
         }
     }
@@ -1047,8 +1047,6 @@ Approximated<Bvec> ExprToBDDTransformer::getSubstraction(const expr &e, const ve
 
 Approximated<cudd::Bvec> ExprToBDDTransformer::ComputeAbstraction(const z3::expr &e, const std::vector<boundVar> &boundVars, Operation op)
 {
-   
-
     auto state = caches.findStateInCaches(e, boundVars);
     bool createdFreshState = state.IsFresh();
     auto res = bvec_assocOp(

@@ -35,6 +35,8 @@ using namespace cudd;
 
 class Caches
 {
+    Config config;
+
   public:
     int variableBitWidth;
     struct CacheHits
@@ -50,6 +52,10 @@ class Caches
 
     CacheHits cacheHits;
     void incrementCache(int cacheType);
+
+    void setupConfig(Config &config){
+        this->config = config;
+    }
 
     std::map<const Z3_ast, std::pair<Approximated<Bvec>, std::vector<boundVar>>> prevBWpreciseBvecs;
     std::map<const Z3_ast, std::vector<Interval>> intervals;
