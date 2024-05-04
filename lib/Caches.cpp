@@ -1,10 +1,9 @@
 #include "Caches.h"
-#include <mutex>
 #include "IntervalTester.h"
 
 #define DEBUG false
 
-static std::mutex m;
+
 
 Approximated<Bvec> Caches::insertIntoCaches(const z3::expr &expr, const Approximated<Bvec> &bvec, const std::vector<boundVar> &boundVars)
 {
@@ -217,7 +216,6 @@ void Caches::pruneBddCache(const std::vector<boundVar> &newBoundVars)
 
 void Caches::resetCacheHits()
 {
-    std::unique_lock<std::mutex> lk(m);
     cacheHits = CacheHits();
 }
 

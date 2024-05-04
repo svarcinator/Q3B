@@ -20,7 +20,6 @@ std::string logTypeToStr(const LogType &type)
 
 void Logger::Log(const std::string &module, const std::string &message, const int verbosity, const LogType &type)
 {
-    //std::cout << "m verbosity level: " << m_verbosityLevel << ", verbosity: " << verbosity <<  std::endl;
     if (m_verbosityLevel == -1 && m_verbosityLevel == verbosity) {
         std::chrono::duration<double> time = std::chrono::high_resolution_clock::now() - startTime;
         std::unique_lock<std::mutex> lk(m);
